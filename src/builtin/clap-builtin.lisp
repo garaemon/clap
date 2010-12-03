@@ -6,5 +6,6 @@
   (:export #:range
            #:abs
            #:all
-           #:any)
+           #:any
+	   #:enumerate)
   )
