@@ -84,7 +84,7 @@ ENUMERATE is a function to create lists containing lists whose elements
 are a count (from START which defaults to 0) and the corresponding value of
 LST.
 
-note that although original enumerate of Python returns a iterator, this
+note that although original enumerate of Python returns an iterator, this
 version returns a list.
 
  example::
