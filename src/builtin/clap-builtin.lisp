@@ -8,5 +8,6 @@
            #:all
            #:any
            #:bin
+           #:bool
 	   #:enumerate)
   )

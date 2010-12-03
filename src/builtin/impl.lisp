@@ -77,6 +77,7 @@ ANY returns non-NIL value if LIST has one or more non-NIL value(s).
   (any '()) => NIL"
   (some #'identity list))
 
+(declaim (inline bin))
 (defun bin (x)
   "this is an implementation of bin function of Python on CommonLisp.
 
@@ -88,6 +89,24 @@ BIN converts an integer to a binary string.
    (bin -100) => \"-1100100\""
   (declare (type integer x))
   (the string (format nil "~B" x)))
+
+(declaim (inline bool))
+(defun bool (&optional (x nil))
+  "this is an implementation of bool function of Python on CommonLisp.
+
+BOOL convert a value to T or NIL. the value is tested by standard truth
+testing of CommonLisp, which is not equivalent to the behavior of Python
+testing.
+
+if X is NIL or omitted, BOOL returns NIL and otherwise returns T.
+
+ example::
+
+   (bool nil) => NIL
+   (bool 1) => T
+   (bool -1) => T
+   (bool 0) => T"
+  (if x t nil))
 
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
