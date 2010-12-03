@@ -6,3 +6,10 @@ Python Standard Libraries on CommonLisp.
 Mailing List is avaiable at https://groups.google.com/group/clap-users
 
 
+install with clbuild
+---
+you can use clbuild (http://common-lisp.net/project/clbuild/) to install
+clap. you can put the contents of clap/clbuild/{my-projects, my-dependencies}
+into clbuild/{my-projects, my-dependencies}.
+
+then type `clbuild install clap`.
