@@ -35,21 +35,6 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
           (loop for n from start downto (1+ stop) by (abs step) collect n)
           (loop for n from start to (1- stop) by step collect n))))
 
-;; range
-(declaim (inline abs))
-(defun abs (x)
-  "this is an implementation of abs function of Python on CommonLisp.
-
-return the absolute value of X.
-
- example::
-
-  (abs 1) => 1
-  (abs -1) => 1
-  (abs -2.4) => 2.4"
-  (declare (type number x))
-  (abs x))
-
 (declaim (inline all))
 (defun all (list)
   "this is an implementation of all function of Python on CommonLisp.
