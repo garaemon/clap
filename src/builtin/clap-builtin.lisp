@@ -5,5 +5,6 @@
   (:documentation "fill this documentation")
   (:export #:range
            #:abs
-           #:all)
+           #:all
+           #:any)
   )

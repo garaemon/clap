@@ -47,7 +47,13 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
 (defun all (list)
   "this is an implementation of all function of Python on CommonLisp.
 
-ALL function returns T when LIST does not contains nil.
+ALL returns T when LIST does not contains nil.
 if LIST equals to NIL, ALL returns T."
   (every #'identity list))
 
+(declaim (inline any))
+(defun any (list)
+  "this is an implementation of any function of Python on CommonLisp.
+
+ANY returns non-NIL value if LIST has one or more non-NIL value(s)."
+  (some #'identity list))
