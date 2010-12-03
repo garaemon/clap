@@ -1,7 +1,7 @@
 #!/usr/bin/env clbuild lisp --script
 
 (setq *print-case* :downcase)
-(defvar *asdf-dir* "../asdf/")
+(defvar *asdf-dir* "../")
 (defvar *src-dir* "../src")
 
 (defvar *py-modules*
@@ -233,7 +233,7 @@
              :version "0.0.0"
              :license "New BSD"
              :components
-             ((:module ,(format nil "../src/~A"
+             ((:module ,(format nil "src/~A"
                                 (string-downcase (string orgsym)))
                        :components
                        ((:file ,(string-downcase (string sym)))))))
