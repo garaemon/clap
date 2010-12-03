@@ -1,4 +1,3 @@
-
 (in-package #:clap-builtin)
 
 (defun range (start &optional (stop nil) (step 1))
@@ -35,3 +34,20 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
           (loop for n from start downto (1+ stop) by (abs step) collect n)
           (loop for n from start to (1- stop) by step collect n))))
 
+(defun enumerate (lst &optional (start 0))
+  "this is an implementation of enumerate function of Python on CommonLisp.
+
+ENUMERATE is a function to create lists containing lists whose elements
+are a count (from START which defaults to 0) and the corresponding value of
+LST.
+
+note that although original enumerate of Python returns a iterator, this
+version returns a list.
+
+ example::
+  
+  (enumerate '(A B C)) => ((0 A) (1 B) (2 C))
+  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))"
+  (declare (type list lst)
+	   (type integer start))
+  (loop for i from start and x in lst collect (list i x)))
