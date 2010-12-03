@@ -40,7 +40,7 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
 (defun abs (x)
   "this is an implementation of abs function of Python on CommonLisp.
 
-return the absolute valud of X.
+return the absolute value of X.
 
  example::
 
@@ -115,13 +115,15 @@ ENUMERATE is a function to create lists containing lists whose elements
 are a count (from START which defaults to 0) and the corresponding value of
 LST.
 
-note that although original enumerate of Python returns a iterator, this
+note that although original enumerate of Python returns an iterator, this
 version returns a list.
 
  example::
   
   (enumerate '(A B C)) => ((0 A) (1 B) (2 C))
-  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))"
+  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))
+  (enumerate '()) => NIL
+  (enumerate '() 123) => NIL"
   (declare (type list lst)
 	   (type integer start))
   (loop for i from start and x in lst collect (list i x)))
