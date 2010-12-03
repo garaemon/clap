@@ -1,0 +1,3 @@
+# clap
+#for developers, please use: clap get_git git@github.com:garaemon/clap.git
+clap get_git git://github.com/garaemon/clap.git
