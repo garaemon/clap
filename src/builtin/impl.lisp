@@ -38,7 +38,15 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
 ;; range
 (declaim (inline abs))
 (defun abs (x)
-  "return the absolute valud of X."
+  "this is an implementation of abs function of Python on CommonLisp.
+
+return the absolute valud of X.
+
+ example::
+
+  (abs 1) => 1
+  (abs -1) => 1
+  (abs -2.4) => 2.4"
   (declare (type number x))
   (abs x))
 
@@ -46,15 +54,27 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
 (defun all (list)
   "this is an implementation of all function of Python on CommonLisp.
 
-ALL returns T when LIST does not contains nil.
-if LIST equals to NIL, ALL returns T."
+ALL returns T when LIST does not contains NIL.
+if LIST equals to NIL, ALL returns T.
+
+ example::
+
+  (all '(t t t NIL)) => NIL
+  (all '(t t t)) => T
+  (all '()) => T"
   (every #'identity list))
 
 (declaim (inline any))
 (defun any (list)
   "this is an implementation of any function of Python on CommonLisp.
 
-ANY returns non-NIL value if LIST has one or more non-NIL value(s)."
+ANY returns non-NIL value if LIST has one or more non-NIL value(s).
+
+ example::
+
+  (any '(NIL NIL 1 2 3)) => 1
+  (any '(NIL NIL)) => NIL
+  (any '()) => NIL"
   (some #'identity list))
 
 (defun enumerate (lst &optional (start 0))
