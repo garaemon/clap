@@ -18,6 +18,7 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
   (range 3) => (0 1 2)
   (range 4 8) => (4 5 6 7)
   (range 0 6 2) => (0 2 4)
+  (range 2 0) => NIL
   (range -4) => NIL
   (range 0 -4) => NIL
   (range 0 -4 -1) => (0 -1 -2 -3)"
@@ -33,6 +34,28 @@ STEP defaults to 1 when you call RANGE with 2 arguments.
       (if (minusp step)
           (loop for n from start downto (1+ stop) by (abs step) collect n)
           (loop for n from start to (1- stop) by step collect n))))
+
+;; range
+(declaim (inline abs))
+(defun abs (x)
+  "return the absolute valud of X."
+  (declare (type number x))
+  (abs x))
+
+(declaim (inline all))
+(defun all (list)
+  "this is an implementation of all function of Python on CommonLisp.
+
+ALL returns T when LIST does not contains nil.
+if LIST equals to NIL, ALL returns T."
+  (every #'identity list))
+
+(declaim (inline any))
+(defun any (list)
+  "this is an implementation of any function of Python on CommonLisp.
+
+ANY returns non-NIL value if LIST has one or more non-NIL value(s)."
+  (some #'identity list))
 
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
