@@ -7,5 +7,6 @@
            #:abs
            #:all
            #:any
+           #:bin
 	   #:enumerate)
   )
