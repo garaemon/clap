@@ -13,5 +13,6 @@
            #:callable
            #:chr
            #:divmod
+           #:filter
 	   #:enumerate)
   )

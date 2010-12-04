@@ -141,6 +141,7 @@ CALLABLE returns T when FUNC is funcall-able.
 CHR converts an integer representing character code into a character."
   (code-char char))
 
+(declaim (inline divmod))
 (defun divmod (a b)
   "this is an implementation of divmod function of Python on CommonLisp.
 
@@ -153,6 +154,17 @@ when deviding A by B.
   (divmod 10 2) => 5 0"
   (declare (type real a b))
   (values (floor (/ a b)) (mod a b)))
+
+(declaim (inline filter))
+(defun filter (func list)
+  "this is an implementation of filter function of Python on CommonLisp.
+
+FILTER returns the elements for which function returns NON-NIL.
+
+ example::
+
+   (filter #'evenp '(1 2 3 4 5 6)) => (2 4 6)"
+  (remove-if-not func list))
 
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
