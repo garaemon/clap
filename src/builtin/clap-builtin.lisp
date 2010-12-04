@@ -15,6 +15,6 @@
            #:divmod
            #:filter
            #:hash
-           #*int
+           #:*int
 	   #:enumerate)
   )
