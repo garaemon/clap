@@ -75,6 +75,34 @@ BIN converts an integer to a binary string.
   (declare (type integer x))
   (the string (format nil "~B" x)))
 
+(declaim (inline oct))
+(defun oct (x)
+  "this is an implementation of oct function of Python on CommonLisp.
+
+OCT converts an integer to an octal string.
+
+  example::
+
+    (oct 100) => \"144\"
+    (oct -100) => \"-144\""
+  (declare (type integer x))
+  (the string (format nil "~O" x)))
+
+(declaim (inline hex))
+(defun hex (x)
+  "this is an implementation of hex function of Python on CommonLisp.
+
+HEX converts an integer to a hexadecimal string.
+
+  example::
+
+    (hex 100) => \"64\"
+    (hex -100) => \"-64\"
+    (hex 255) => \"FF\"
+    (hex -255) => \"-FF\""
+  (declare (type integer x))
+  (the string (format nil "~X" x)))
+
 (declaim (inline bool))
 (defun bool (&optional (x nil))
   "this is an implementation of bool function of Python on CommonLisp.
@@ -112,4 +140,3 @@ version returns a list.
   (declare (type list lst)
 	   (type integer start))
   (loop for i from start and x in lst collect (list i x)))
-
