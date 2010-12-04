@@ -16,5 +16,8 @@
            #:filter
            #:hash
            #:int
+           #:isinstance
+           #:issubclass
+           #:len
            #:enumerate)
   )

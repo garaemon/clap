@@ -192,6 +192,43 @@ by the 2nd argument. it defaults to 10.
            (simple-string x))
   (parse-integer x :radix base))
 
+(declaim (inline isinstance))
+(defun isinstance (obj class)
+  "this is an implementation of isinstance function of Python on CommonLisp.
+
+ISINSTANCE returns T if OBJ is an instance of CLASS or a subclass of CLASS.
+
+ example::
+
+   (isinstance 1 'integer) => T
+   (isinstance 1 'number) => T
+   (isinstance 1 'single-float) => NIL"
+  (typep obj class))
+
+(declaim (inline issubclass))
+(defun issubclass (sub super)
+  "this is an implementation of issubclass function of Python on CommonLisp.
+
+ISSUBCLASS returns T if SUB is a subclass of SUPER.
+
+ example::
+
+  (clap-builtin:issubclass 'number 'single-float) => NIL
+  (clap-builtin:issubclass  'single-float 'number) => T"
+  (closer-mop:subclassp sub super))
+
+(declaim (inline len))
+(defun len (x)
+  "this is an implementation of len function of Python on CommonLisp.
+
+LEN returns the length of X.
+
+ example::
+
+   (len '()) => 0
+   (len '(0 1 2)) => 3"
+  (length x))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 
