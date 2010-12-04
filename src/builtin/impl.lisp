@@ -177,6 +177,20 @@ HASH returns an integer hash code for object.
    (hash \"hogehoge\") => 444792678001011825"
   (sxhash obj))
 
+(declaim (inline int))
+(defun int (x &optioanl (base 10))
+  "this is an implementation of int function of Python on CommonLisp.
+
+INT converts a string, X, into an integer value. you can specify the base
+by the 2nd argument. it defaults to 10.
+
+ example::
+
+  (int \"10\") => 10
+  (int \"10\" 2) => 2"
+  (declare (type integer x base))
+  (parse-integer x :radix base))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 
