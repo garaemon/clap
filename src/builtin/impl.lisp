@@ -121,6 +121,76 @@ if X is NIL or omitted, BOOL returns NIL and otherwise returns T.
    (bool 0) => T"
   (if x t nil))
 
+(declaim (inline callable))
+(defun callable (func)
+  "this is an implementation of callable function of Python on CommonLisp.
+
+CALLABLE returns T when FUNC is funcall-able.
+
+ example::
+
+   (callble #'(lambda ())) => T
+   (callable #'+) => T
+   (callable 1) => NIL"
+  (functionp func))
+
+(declaim (inline chr))
+(defun chr (char)
+  "this is an implementation of chr function of Python on CommonLisp
+
+CHR converts an integer representing character code into a character."
+  (code-char char))
+
+(declaim (inline divmod))
+(defun divmod (a b)
+  "this is an implementation of divmod function of Python on CommonLisp.
+
+DIVMOD return the quatient and remainder as multiple-values
+when deviding A by B.
+
+ example::
+
+  (divmod 10 3) => 3 1
+  (divmod 10 2) => 5 0"
+  (declare (type real a b))
+  (values (floor (/ a b)) (mod a b)))
+
+(declaim (inline filter))
+(defun filter (func list)
+  "this is an implementation of filter function of Python on CommonLisp.
+
+FILTER returns the elements for which function returns NON-NIL.
+
+ example::
+
+   (filter #'evenp '(1 2 3 4 5 6)) => (2 4 6)"
+  (remove-if-not func list))
+
+(declaim (inline hash))
+(defun hash (obj)
+  "this is an implementation of hash function of Python on CommonLisp.
+
+HASH returns an integer hash code for object.
+
+ example::
+
+   (hash \"hogehoge\") => 444792678001011825"
+  (sxhash obj))
+
+(declaim (inline int))
+(defun int (x &optioanl (base 10))
+  "this is an implementation of int function of Python on CommonLisp.
+
+INT converts a string, X, into an integer value. you can specify the base
+by the 2nd argument. it defaults to 10.
+
+ example::
+
+  (int \"10\") => 10
+  (int \"10\" 2) => 2"
+  (declare (type integer x base))
+  (parse-integer x :radix base))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 

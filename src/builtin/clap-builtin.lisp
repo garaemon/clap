@@ -10,5 +10,11 @@
 	   #:oct
 	   #:hex
            #:bool
+           #:callable
+           #:chr
+           #:divmod
+           #:filter
+           #:hash
+           #*int
 	   #:enumerate)
   )
