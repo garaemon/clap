@@ -21,5 +21,6 @@
            #:len
            #:enumerate
            #:pow
+           #:raw-input
            #:not-implemented-yet)
   )
