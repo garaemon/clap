@@ -19,5 +19,7 @@
            #:isinstance
            #:issubclass
            #:len
-           #:enumerate)
+           #:enumerate
+
+           #:not-implemented-yet)
   )

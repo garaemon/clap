@@ -6,5 +6,6 @@
   :components
   ((:module "src/builtin" :components
             ((:file "clap-builtin")
-             (:file "impl" :depends-on ("clap-builtin"))
-             (:file "util" :depends-on ("clap-builtin"))))))
+             (:file "util" :depends-on ("clap-builtin"))
+             (:file "condition" :depends-on ("clap-builtin"))
+             (:file "impl" :depends-on ("clap-builtin" "condition" "util"))))))
