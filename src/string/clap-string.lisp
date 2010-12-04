@@ -1,9 +1,10 @@
 (defpackage :clap-string
   (:use #:common-lisp)
-  (:import-from #:clap-builtin #:defconstant*)
+  (:import-from #:clap-builtin #:defconstant* #:sconc)
   (:export #:+ascii-letters+ #:+ascii-lowercase+ #:+ascii-uppercase+ #:+digits+
            #:+hexdigits+ #:+letters+ #:+lowercase+ #:+octdigits+ #:+printable+
-           #:+punctuation+ #:+uppercase+ #:+whitespace+)
+           #:+punctuation+ #:+uppercase+ #:+whitespace+
+           #:capwords)
   (:documentation "fill this documentation"))
 
 (in-package :clap-string)
@@ -65,5 +66,40 @@
                  +punctuation+
                  +whitespace+))
 
+;; =============================================================================
+;; string.capwords(s[, sep])
+;; =============================================================================
 
+#||
+;; in Python
+>>> string.capwords("foo bar^K baz")
+'Foo Bar Baz'
+>>> string.capwords("foo bar^K          baz")
+'Foo Bar Baz'
+>>> string.capwords("foo bar baz" "")
+'Foo Bar Baz'
+>>> string.capwords("foo bar             baz" "")
+'Foo Bar Baz'
+||#
 
+(defgeneric capwords (obj &optional sep))
+
+(defmethod capwords ((string string) &optional (sep " " sep-p))
+  (let* ((sep (if (or (string= "" sep)
+                      (find (character sep) +whitespace+))
+                  " "
+                  sep))
+         (pat (ppcre:create-scanner
+               (if sep-p
+                   sep
+                   (sconc "[" +whitespace+ "]")))))
+    (reduce #'sconc
+            (loop :for word :on (delete "" (ppcre:split pat string) :test #'string=)
+                  :collect (string-capitalize (car word)) :into ans
+                  :if (null (cdr word))
+                    :return ans
+                  :else
+                    :collect sep :into ans))))
+
+(defmethod capwords ((symbol symbol) &optional sep)
+  (values (intern (capwords (symbol-name symbol) sep))))
