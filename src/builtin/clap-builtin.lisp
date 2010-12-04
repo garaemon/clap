@@ -7,6 +7,8 @@
            #:all
            #:any
            #:bin
+	   #:oct
+	   #:hex
            #:bool
 	   #:enumerate)
   )
