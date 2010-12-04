@@ -1,5 +1,6 @@
 (defpackage :clap-string
   (:use #:common-lisp)
+  (:import-from #:clap-builtin #:defconstant*)
   (:export #:+ascii-letters+ #:+ascii-lowercase+ #:+ascii-uppercase+ #:+digits+
            #:+hexdigits+ #:+letters+ #:+lowercase+ #:+octdigits+ #:+printable+
            #:+punctuation+ #:+uppercase+ #:+whitespace+)
@@ -10,41 +11,41 @@
 ;; String constants
 ;; http://docs.python.org/release/2.4/lib/node104.html
 
-(defconstant +ascii-lowercase+
+(defconstant* +ascii-lowercase+
   "abcdefghijklmnopqrstuvwxyz")
 
-(defconstant +ascii-uppercase+
+(defconstant* +ascii-uppercase+
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-(defconstant +ascii-letters+
+(defconstant* +ascii-letters+
   #.(concatenate 'string
                  +ascii-lowercase+
                  +ascii-uppercase+))
 
-(defconstant +digits+
+(defconstant* +digits+
   "0123456789")
 
-(defconstant +hexdigits+
+(defconstant* +hexdigits+
   "0123456789abcdefABCDEF")
 
-(defconstant +octdigits+
+(defconstant* +octdigits+
   "01234567")
 
 ;; FIXME -> locale
-(defconstant +lowercase+
+(defconstant* +lowercase+
   "abcdefghijklmnopqrstuvwxyz")
 
 ;; FIXME -> locale
-(defconstant +uppercase+
+(defconstant* +uppercase+
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 ;; FIXME -> locale
-(defconstant +punctuation+
+(defconstant* +punctuation+
   "!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~")
 
 ;; whitespace
 ;; http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_w.htm#whitespace
-(defconstant +whitespace+
+(defconstant* +whitespace+
   #.(format nil
             "~{~C~}"
             '(#\Tab
@@ -54,10 +55,10 @@
               #\Return
               #\Space)))
 
-(defconstant +letters+
+(defconstant* +letters+
   #.(concatenate 'string +lowercase+ +uppercase+))
 
-(defconstant +printable+
+(defconstant* +printable+
   #.(concatenate 'string
                  +digits+
                  +letters+
