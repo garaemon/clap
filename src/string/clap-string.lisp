@@ -4,7 +4,7 @@
   (:export #:+ascii-letters+ #:+ascii-lowercase+ #:+ascii-uppercase+ #:+digits+
            #:+hexdigits+ #:+letters+ #:+lowercase+ #:+octdigits+ #:+printable+
            #:+punctuation+ #:+uppercase+ #:+whitespace+
-           #:capwords)
+           #:capwords #:maketrans)
   (:documentation "fill this documentation"))
 
 (in-package :clap-string)
