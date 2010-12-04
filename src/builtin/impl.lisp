@@ -134,6 +134,13 @@ CALLABLE returns T when FUNC is funcall-able.
    (callable 1) => NIL"
   (functionp func))
 
+(declaim (inline chr))
+(defun chr (char)
+  "this is an implementation of chr function of Python on CommonLisp
+
+CHR converts an integer representing character code into a character."
+  (code-char char))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 
