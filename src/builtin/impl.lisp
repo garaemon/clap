@@ -141,6 +141,19 @@ CALLABLE returns T when FUNC is funcall-able.
 CHR converts an integer representing character code into a character."
   (code-char char))
 
+(defun divmod (a b)
+  "this is an implementation of divmod function of Python on CommonLisp.
+
+DIVMOD return the quatient and remainder as multiple-values
+when deviding A by B.
+
+ example::
+
+  (divmod 10 3) => 3 1
+  (divmod 10 2) => 5 0"
+  (declare (type real a b))
+  (values (floor (/ a b)) (mod a b)))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 

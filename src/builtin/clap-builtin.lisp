@@ -12,5 +12,6 @@
            #:bool
            #:callable
            #:chr
+           #:divmod
 	   #:enumerate)
   )
