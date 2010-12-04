@@ -20,6 +20,6 @@
            #:issubclass
            #:len
            #:enumerate
-
+           #:pow
            #:not-implemented-yet)
   )

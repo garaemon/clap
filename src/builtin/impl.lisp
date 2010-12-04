@@ -229,6 +229,21 @@ LEN returns the length of X.
    (len '(0 1 2)) => 3"
   (length x))
 
+(defun ord (c)
+  (error 'not-implemented-yet))
+
+(defun pow (x y &optional (z nil))
+  "this is an implementation of pow function of Python on CommonLisp.
+
+POW retuerns x to the power y. if z is given, POW returns x to the power y and modulo
+z."
+  (declare (type number x y)
+           (type (or number null) z))
+  (if z
+      (mod (expt x y) z)
+      (expt x y)))
+  
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 
