@@ -14,5 +14,6 @@
            #:chr
            #:divmod
            #:filter
+           #:hash
 	   #:enumerate)
   )

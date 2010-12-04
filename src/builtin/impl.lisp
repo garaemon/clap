@@ -166,6 +166,17 @@ FILTER returns the elements for which function returns NON-NIL.
    (filter #'evenp '(1 2 3 4 5 6)) => (2 4 6)"
   (remove-if-not func list))
 
+(declaim (inline hash))
+(defun hash (obj)
+  "this is an implementation of hash function of Python on CommonLisp.
+
+HASH returns an integer hash code for object.
+
+ example::
+
+   (hash \"hogehoge\") => 444792678001011825"
+  (sxhash obj))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 
