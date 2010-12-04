@@ -10,5 +10,6 @@
 	   #:oct
 	   #:hex
            #:bool
+           #:callable
 	   #:enumerate)
   )

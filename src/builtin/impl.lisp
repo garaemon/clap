@@ -121,6 +121,19 @@ if X is NIL or omitted, BOOL returns NIL and otherwise returns T.
    (bool 0) => T"
   (if x t nil))
 
+(declaim (inline callable))
+(defun callable (func)
+  "this is an implementation of callable function of Python on CommonLisp.
+
+CALLABLE returns T when FUNC is funcall-able.
+
+ example::
+
+   (callble #'(lambda ())) => T
+   (callable #'+) => T
+   (callable 1) => NIL"
+  (functionp func))
+
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.
 
