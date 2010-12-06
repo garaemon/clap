@@ -121,6 +121,9 @@ if X is NIL or omitted, BOOL returns NIL and otherwise returns T.
    (bool 0) => T"
   (if x t nil))
 
+(defun bytearray (&rest args)
+  (error 'not-implemented-yet))
+
 (declaim (inline callable))
 (defun callable (func)
   "this is an implementation of callable function of Python on CommonLisp.
@@ -249,9 +252,6 @@ LEN returns the length of X.
    (len '()) => 0
    (len '(0 1 2)) => 3"
   (length x))
-
-(defun ord (c)
-  (error 'not-implemented-yet))
 
 (defun pow (x y &optional (z nil))
   "this is an implementation of pow function of Python on CommonLisp.
