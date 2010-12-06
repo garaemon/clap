@@ -24,6 +24,7 @@
            #:raw-input
            #:reversed
            #:sorted
+           #:sum
            #:zip
            #:not-implemented-yet)
   )

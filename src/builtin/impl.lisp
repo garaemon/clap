@@ -264,6 +264,25 @@ y and modulo z."
       (mod (expt x y) z)
       (expt x y)))
 
+(defun raw-input (&optional (prompt nil))
+  "this is an implementation of raw_input function of Python on CommonLisp.
+
+RAW-INPUT reads a line from input and return it as a string. if PROMPT is
+specified, RAW-INPUT prints it to standard output before reading a line."
+  (declare (type (or null string) prompt))
+  (if prompt
+      (format t prompt))
+  (read-line))
+
+(declaim (inline reversed))
+(defun reversed (lst)
+  "this is an implementation of reversed function of Python on CommonLisp.
+
+the original reversed function of Python returns a reversed iterator. in
+clap, "
+  (declare (type list lst))
+  (the list (reverse lst)))
+
 (defun sorted (list &key (cmp #'<) (key #'identity) (reverse nil))
   "this is an implementation of sorted function of Python on CommonLisp.
 
@@ -288,24 +307,19 @@ TODO: currently only list is supported, array is not supported.
         (nreverse result)               ;no consing method is available
         result)))
 
-(defun raw-input (&optional (prompt nil))
-  "this is an implementation of raw_input function of Python on CommonLisp.
 
-RAW-INPUT reads a line from input and return it as a string. if PROMPT is
-specified, RAW-INPUT prints it to standard output before reading a line."
-  (declare (type (or null string) prompt))
-  (if prompt
-      (format t prompt))
-  (read-line))
+(declaim (inline sum))
+(defun sum (list &optional (start 0))
+  "this is an implementation of sum function of Python on CommonLisp.
 
-(declaim (inline reversed))
-(defun reversed (lst)
-  "this is an implementation of reversed function of Python on CommonLisp.
+SUM calculates a summation of all the elements of LIST from START, it defaults
+to 0.
 
-the original reversed function of Python returns a reversed iterator. in
-clap, "
-  (declare (type list lst))
-  (the list (reverse lst)))
+ example::
+
+   (sum '(1 2 3)) => 6
+   (sum '(1 2 3) 1) => 5"
+  (loop for i from start to (1- (length list)) sum (elt list i)))
 
 (declaim (inline zip))
 (defun zip (&rest args)
