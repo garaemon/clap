@@ -246,12 +246,21 @@ z."
 (defun raw-input (&optional (prompt nil))
   "this is an implementation of raw_input function of Python on CommonLisp.
 
-RAW-INPUT reads a line from input and return it as a string. if PROMPT is specified,
-RAW-INPUT prints it to standard output before reading a line."
+RAW-INPUT reads a line from input and return it as a string. if PROMPT is
+specified, RAW-INPUT prints it to standard output before reading a line."
   (declare (type (or null string) prompt))
   (if prompt
       (format t prompt))
   (read-line))
+
+(declaim (inline reversed))
+(defun reversed (lst)
+  "this is an implementation of reversed function of Python on CommonLisp.
+
+the original reversed function of Python returns a reversed iterator. in
+clap, "
+  (declare (type list lst))
+  (the list (reverse lst)))
 
 (defun enumerate (lst &optional (start 0))
   "this is an implementation of enumerate function of Python on CommonLisp.

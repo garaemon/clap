@@ -22,5 +22,6 @@
            #:enumerate
            #:pow
            #:raw-input
+           #:reversed
            #:not-implemented-yet)
   )
