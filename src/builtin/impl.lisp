@@ -281,3 +281,18 @@ version returns a list.
   (declare (type list lst)
 	   (type integer start))
   (loop for i from start and x in lst collect (list i x)))
+
+(declaim (inline zip))
+(defun zip (&rest args)
+  "this is an implmentation of zip function of python on CommonLisp.
+
+ZIP returns a list, whose i-th element has the i-th element from each of
+the argument lists.
+
+ example::
+
+  (zip '(1 2 3)) => ((1) (2) (3))
+  (zip '(1 2 3) '(0.1 0.2 0.3 0.4) '(-1 -2 -3)) => ((1 0.1 -1)
+                                                    (2 0.2 -2)
+                                                    (3 0.3 -3))"
+  (apply #'mapcar #'list args))

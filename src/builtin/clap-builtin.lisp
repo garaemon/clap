@@ -23,5 +23,6 @@
            #:pow
            #:raw-input
            #:reversed
+           #:zip
            #:not-implemented-yet)
   )
