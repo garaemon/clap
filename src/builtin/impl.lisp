@@ -307,6 +307,21 @@ TODO: currently only list is supported, array is not supported.
         (nreverse result)               ;no consing method is available
         result)))
 
+(declaim (inline str))
+(defun str (&optional (object nil specifiedp))
+  "this is an implementation of str function of Python on CommonLisp.
+
+STR retuens a string in printable representation of OBJECT.
+
+ example::
+
+  (str) => \"\"
+  (str nil) => \"NIL\"
+  (str 1) => \"1\""
+  (if (not specifiedp)
+      ""
+      (format nil "~A" object)))
+  
 
 (declaim (inline sum))
 (defun sum (list &optional (start 0))
