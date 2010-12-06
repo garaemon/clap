@@ -141,6 +141,27 @@ CALLABLE returns T when FUNC is funcall-able.
 CHR converts an integer representing character code into a character."
   (code-char char))
 
+(declaim (inline enumerate))
+(defun enumerate (lst &optional (start 0))
+  "this is an implementation of enumerate function of Python on CommonLisp.
+
+ENUMERATE is a function to create lists containing lists whose elements
+are a count (from START which defaults to 0) and the corresponding value of
+LST.
+
+note that although original enumerate of Python returns an iterator, this
+version returns a list.
+
+ example::
+
+  (enumerate '(A B C)) => ((0 A) (1 B) (2 C))
+  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))
+  (enumerate '()) => NIL
+  (enumerate '() 123) => NIL"
+  (declare (type list lst)
+	   (type integer start))
+  (loop for i from start and x in lst collect (list i x)))
+
 (declaim (inline divmod))
 (defun divmod (a b)
   "this is an implementation of divmod function of Python on CommonLisp.
@@ -261,26 +282,6 @@ the original reversed function of Python returns a reversed iterator. in
 clap, "
   (declare (type list lst))
   (the list (reverse lst)))
-
-(defun enumerate (lst &optional (start 0))
-  "this is an implementation of enumerate function of Python on CommonLisp.
-
-ENUMERATE is a function to create lists containing lists whose elements
-are a count (from START which defaults to 0) and the corresponding value of
-LST.
-
-note that although original enumerate of Python returns an iterator, this
-version returns a list.
-
- example::
-
-  (enumerate '(A B C)) => ((0 A) (1 B) (2 C))
-  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))
-  (enumerate '()) => NIL
-  (enumerate '() 123) => NIL"
-  (declare (type list lst)
-	   (type integer start))
-  (loop for i from start and x in lst collect (list i x)))
 
 (declaim (inline zip))
 (defun zip (&rest args)
