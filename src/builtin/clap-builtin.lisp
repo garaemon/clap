@@ -23,6 +23,7 @@
            #:pow
            #:raw-input
            #:reversed
+           #:sorted
            #:zip
            #:not-implemented-yet)
   )

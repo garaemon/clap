@@ -256,13 +256,37 @@ LEN returns the length of X.
 (defun pow (x y &optional (z nil))
   "this is an implementation of pow function of Python on CommonLisp.
 
-POW retuerns x to the power y. if z is given, POW returns x to the power y and modulo
-z."
+POW retuerns x to the power y. if z is given, POW returns x to the power
+y and modulo z."
   (declare (type number x y)
            (type (or number null) z))
   (if z
       (mod (expt x y) z)
       (expt x y)))
+
+(defun sorted (list &key (cmp #'<) (key #'identity) (reverse nil))
+  "this is an implementation of sorted function of Python on CommonLisp.
+
+SORTED sorts LIST using CMP as a compare function and KEY as a key function and
+resutns a new list of it. if you specify REVERSE keyword, you will get a
+reversed list. CMP defaults to #'< and KEY defaults to #'IDENTITY.
+
+TODO: currently only list is supported, array is not supported.
+
+ example::
+
+   (sorted '(3 2 1)) => (1 2 3)
+   (sorted '(1 2 3) :reverse t) => (3 2 1)
+   (sorted '(2 -1 -3) :key #'(lambda (x) (* x x))) => (-1 2 -3)
+   (sorted '(1 2 3) :cmp #'>) => (3 2 1)"
+  (declare (type list list)
+           (type function cmp key)
+           (type boolean reverse))
+  (let ((result (sort (copy-list list) cmp :key key)))
+    (declare (type list result))
+    (if reverse
+        (nreverse result)               ;no consing method is available
+        result)))
 
 (defun raw-input (&optional (prompt nil))
   "this is an implementation of raw_input function of Python on CommonLisp.
