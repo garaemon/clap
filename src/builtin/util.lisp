@@ -1,6 +1,7 @@
 (in-package #:clap-builtin)
 
 (defmacro defconstant* (symbol value &optional doc)
+  "only if SYMBOL is not bound, binds VALUE to SYMBOL"
   `(defconstant ,symbol (if (boundp ',symbol)
                             (symbol-value ',symbol)
                             ,value)

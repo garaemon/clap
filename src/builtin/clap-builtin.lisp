@@ -2,7 +2,7 @@
 (defpackage :clap-builtin
   (:use #:common-lisp)
   (:shadow #:abs)
-  (:documentation "fill this documentation")
+  (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
            #:any
@@ -15,6 +15,17 @@
            #:divmod
            #:filter
            #:hash
-           #:*int
-	   #:enumerate)
+           #:int
+           #:isinstance
+           #:issubclass
+           #:len
+           #:enumerate
+           #:pow
+           #:raw-input
+           #:reversed
+           #:sorted
+           #:str
+           #:sum
+           #:zip
+           #:not-implemented-yet)
   )

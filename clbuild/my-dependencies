@@ -27,4 +27,4 @@
 # For details, please refer to
 # http://common-lisp.net/project/clbuild/#faq_dependency_details
 #
-clap cl-ppcre
+clap cl-ppcre closer-mop

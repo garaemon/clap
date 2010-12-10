@@ -121,6 +121,9 @@ if X is NIL or omitted, BOOL returns NIL and otherwise returns T.
    (bool 0) => T"
   (if x t nil))
 
+(defun bytearray (&rest args)
+  (error 'not-implemented-yet))
+
 (declaim (inline callable))
 (defun callable (func)
   "this is an implementation of callable function of Python on CommonLisp.
@@ -140,6 +143,27 @@ CALLABLE returns T when FUNC is funcall-able.
 
 CHR converts an integer representing character code into a character."
   (code-char char))
+
+(declaim (inline enumerate))
+(defun enumerate (lst &optional (start 0))
+  "this is an implementation of enumerate function of Python on CommonLisp.
+
+ENUMERATE is a function to create lists containing lists whose elements
+are a count (from START which defaults to 0) and the corresponding value of
+LST.
+
+note that although original enumerate of Python returns an iterator, this
+version returns a list.
+
+ example::
+
+  (enumerate '(A B C)) => ((0 A) (1 B) (2 C))
+  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))
+  (enumerate '()) => NIL
+  (enumerate '() 123) => NIL"
+  (declare (type list lst)
+	   (type integer start))
+  (loop for i from start and x in lst collect (list i x)))
 
 (declaim (inline divmod))
 (defun divmod (a b)
@@ -192,22 +216,137 @@ by the 2nd argument. it defaults to 10.
            (simple-string x))
   (parse-integer x :radix base))
 
-(defun enumerate (lst &optional (start 0))
-  "this is an implementation of enumerate function of Python on CommonLisp.
+(declaim (inline isinstance))
+(defun isinstance (obj class)
+  "this is an implementation of isinstance function of Python on CommonLisp.
 
-ENUMERATE is a function to create lists containing lists whose elements
-are a count (from START which defaults to 0) and the corresponding value of
-LST.
-
-note that although original enumerate of Python returns an iterator, this
-version returns a list.
+ISINSTANCE returns T if OBJ is an instance of CLASS or a subclass of CLASS.
 
  example::
 
-  (enumerate '(A B C)) => ((0 A) (1 B) (2 C))
-  (enumerate '(A B C) 1) => ((1 A) (2 B) (3 C))
-  (enumerate '()) => NIL
-  (enumerate '() 123) => NIL"
-  (declare (type list lst)
-	   (type integer start))
-  (loop for i from start and x in lst collect (list i x)))
+   (isinstance 1 'integer) => T
+   (isinstance 1 'number) => T
+   (isinstance 1 'single-float) => NIL"
+  (typep obj class))
+
+(declaim (inline issubclass))
+(defun issubclass (sub super)
+  "this is an implementation of issubclass function of Python on CommonLisp.
+
+ISSUBCLASS returns T if SUB is a subclass of SUPER.
+
+ example::
+
+  (clap-builtin:issubclass 'number 'single-float) => NIL
+  (clap-builtin:issubclass  'single-float 'number) => T"
+  (closer-mop:subclassp sub super))
+
+(declaim (inline len))
+(defun len (x)
+  "this is an implementation of len function of Python on CommonLisp.
+
+LEN returns the length of X.
+
+ example::
+
+   (len '()) => 0
+   (len '(0 1 2)) => 3"
+  (length x))
+
+(defun pow (x y &optional (z nil))
+  "this is an implementation of pow function of Python on CommonLisp.
+
+POW retuerns x to the power y. if z is given, POW returns x to the power
+y and modulo z."
+  (declare (type number x y)
+           (type (or number null) z))
+  (if z
+      (mod (expt x y) z)
+      (expt x y)))
+
+(defun raw-input (&optional (prompt nil))
+  "this is an implementation of raw_input function of Python on CommonLisp.
+
+RAW-INPUT reads a line from input and return it as a string. if PROMPT is
+specified, RAW-INPUT prints it to standard output before reading a line."
+  (declare (type (or null string) prompt))
+  (if prompt
+      (format t prompt))
+  (read-line))
+
+(declaim (inline reversed))
+(defun reversed (lst)
+  "this is an implementation of reversed function of Python on CommonLisp.
+
+the original reversed function of Python returns a reversed iterator. in
+clap, "
+  (declare (type list lst))
+  (the list (reverse lst)))
+
+(defun sorted (list &key (cmp #'<) (key #'identity) (reverse nil))
+  "this is an implementation of sorted function of Python on CommonLisp.
+
+SORTED sorts LIST using CMP as a compare function and KEY as a key function and
+resutns a new list of it. if you specify REVERSE keyword, you will get a
+reversed list. CMP defaults to #'< and KEY defaults to #'IDENTITY.
+
+TODO: currently only list is supported, array is not supported.
+
+ example::
+
+   (sorted '(3 2 1)) => (1 2 3)
+   (sorted '(1 2 3) :reverse t) => (3 2 1)
+   (sorted '(2 -1 -3) :key #'(lambda (x) (* x x))) => (-1 2 -3)
+   (sorted '(1 2 3) :cmp #'>) => (3 2 1)"
+  (declare (type list list)
+           (type function cmp key)
+           (type boolean reverse))
+  (let ((result (sort (copy-list list) cmp :key key)))
+    (declare (type list result))
+    (if reverse
+        (nreverse result)               ;no consing method is available
+        result)))
+
+(declaim (inline str))
+(defun str (&optional (object nil specifiedp))
+  "this is an implementation of str function of Python on CommonLisp.
+
+STR retuens a string in printable representation of OBJECT.
+
+ example::
+
+  (str) => \"\"
+  (str nil) => \"NIL\"
+  (str 1) => \"1\""
+  (if (not specifiedp)
+      ""
+      (format nil "~A" object)))
+  
+
+(declaim (inline sum))
+(defun sum (list &optional (start 0))
+  "this is an implementation of sum function of Python on CommonLisp.
+
+SUM calculates a summation of all the elements of LIST from START, it defaults
+to 0.
+
+ example::
+
+   (sum '(1 2 3)) => 6
+   (sum '(1 2 3) 1) => 5"
+  (loop for i from start to (1- (length list)) sum (elt list i)))
+
+(declaim (inline zip))
+(defun zip (&rest args)
+  "this is an implmentation of zip function of python on CommonLisp.
+
+ZIP returns a list, whose i-th element has the i-th element from each of
+the argument lists.
+
+ example::
+
+  (zip '(1 2 3)) => ((1) (2) (3))
+  (zip '(1 2 3) '(0.1 0.2 0.3 0.4) '(-1 -2 -3)) => ((1 0.1 -1)
+                                                    (2 0.2 -2)
+                                                    (3 0.3 -3))"
+  (apply #'mapcar #'list args))
