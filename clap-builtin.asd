@@ -8,4 +8,8 @@
             ((:file "clap-builtin")
              (:file "util" :depends-on ("clap-builtin"))
              (:file "condition" :depends-on ("clap-builtin"))
-             (:file "impl" :depends-on ("clap-builtin" "condition" "util"))))))
+             (:file "meta" :depends-on ("clap-builtin" "condition" "util"))
+             (:file "impl" :depends-on ("clap-builtin"
+                                        "condition"
+                                        "util"
+                                        "meta"))))))
