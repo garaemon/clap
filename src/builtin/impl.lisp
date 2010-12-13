@@ -86,10 +86,13 @@ OCT converts an integer to an octal string.
     (oct 100) => \"144\"
     (oct -100) => \"-144\""
   (declare (type integer x))
-  (the string (format nil "~O" x)))
+  (the string (format nil "0~O" x)))
 
-(declaim (inline hex))
-(defun hex (x)
+(defgeneric hex (x)
+  (:documentation 
+   "this is an implementation of hex function of Python on CommonLisp"))
+(defmethod hex ((x number))             ;define as method, because
+                                        ;python spec requires float.hex method
   "this is an implementation of hex function of Python on CommonLisp.
 
 HEX converts an integer to a hexadecimal string.
@@ -101,7 +104,7 @@ HEX converts an integer to a hexadecimal string.
     (hex 255) => \"FF\"
     (hex -255) => \"-FF\""
   (declare (type integer x))
-  (the string (format nil "~X" x)))
+  (the string (format nil "0x~X" x)))
 
 (declaim (inline bool))
 (defun bool (&optional (x nil))
@@ -283,12 +286,13 @@ clap, "
   (declare (type list lst))
   (the list (reverse lst)))
 
-(defun sorted (list &key (cmp #'<) (key #'identity) (reverse nil))
+(defun sorted (list &key (cmp #'<) (test cmp) (key #'identity) (reverse nil))
   "this is an implementation of sorted function of Python on CommonLisp.
 
 SORTED sorts LIST using CMP as a compare function and KEY as a key function and
 resutns a new list of it. if you specify REVERSE keyword, you will get a
 reversed list. CMP defaults to #'< and KEY defaults to #'IDENTITY.
+you can also use TEST keyword as well as CMP keyword.
 
 TODO: currently only list is supported, array is not supported.
 
