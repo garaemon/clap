@@ -27,3 +27,4 @@
         (loop :for c :across s
               :do (setf (schar result pos) c) (incf pos)))
       result)))
+

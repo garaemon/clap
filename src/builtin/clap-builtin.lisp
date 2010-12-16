@@ -1,7 +1,6 @@
 
 (defpackage :clap-builtin
   (:use #:common-lisp)
-  (:shadow #:abs)
   (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
@@ -27,5 +26,6 @@
            #:str
            #:sum
            #:zip
+           #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
   )
