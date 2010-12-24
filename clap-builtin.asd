@@ -12,4 +12,5 @@
              (:file "impl" :depends-on ("clap-builtin"
                                         "condition"
                                         "util"
-                                        "meta"))))))
+                                        "meta"))
+             (:file "number" :depends-on ("meta" "impl"))))))
