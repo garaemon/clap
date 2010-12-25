@@ -30,6 +30,7 @@
            #:zip
            ;; string.lisp
            #:capitalize
+           #:center
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
   )
