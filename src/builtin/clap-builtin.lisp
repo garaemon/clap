@@ -31,6 +31,7 @@
            ;; string.lisp
            #:capitalize
            #:center
+           #:string-count
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
   )
