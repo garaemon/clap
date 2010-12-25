@@ -127,6 +127,32 @@ return a copy of STR which all the tab in STR are replaced by TABSIZE spaces."))
          do (write-char ch output))
     (get-output-stream-string output)))
 
+(defgeneric string-find (str sub &key start end start2 end2)
+  (:documentation
+   "this is an implementation of str.find."))
+
+(defmethod string-find ((str string) sub
+                        &key (start 0) (end (length str))
+                        (start2 0) (end2 (length sub)))
+  (loop
+     with sub-initial = (elt sub start2)
+     for i from start to (- end end2)
+     while (> (length str) i)
+     for ch = (elt str i)
+     if (char= ch sub-initial)
+     do
+       (let ((matchedp (loop
+                          for ii from (1+ i)
+                          for j from (1+ start2) below end2
+                          for ch1 = (elt str ii)
+                          for ch2 = (elt sub j)
+                          if (not (char= ch1 ch2))
+                          return nil
+                          finally (return t))))
+         (if matchedp
+             (return i)))
+     finally (return -1)))
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.

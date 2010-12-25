@@ -34,6 +34,7 @@
            #:string-count
            #:endswith
            #:expandtabs
+           #:string-find
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
