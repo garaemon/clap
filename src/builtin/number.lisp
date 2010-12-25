@@ -1,5 +1,18 @@
 (in-package :clap-builtin)
 
+(defgeneric bit-length (number)
+  (:documentation
+   "this is an implementation of int.bit_length and long.bit_length of Python."))
+
+(defmethod bit-length ((number integer))
+  "this is an implementation of int.bit_length and long.bit_length of Python.
+
+ example::
+
+   (bit-length 1) => 1
+   (bit-length -37) => 6"
+  (integer-length number))
+
 (defmethod as-integer-ratio ((number float))
   "this is an implementation of float.as_integer_ratio.
 

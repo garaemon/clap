@@ -6,6 +6,7 @@
            #:all
            #:any
            #:bin
+           #:bit-length
 	   #:oct
 	   #:hex
            #:bool
