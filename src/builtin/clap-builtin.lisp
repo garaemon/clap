@@ -35,6 +35,7 @@
            #:endswith
            #:expandtabs
            #:string-find
+           #:index
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)

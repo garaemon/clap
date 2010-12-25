@@ -153,6 +153,23 @@ return a copy of STR which all the tab in STR are replaced by TABSIZE spaces."))
              (return i)))
      finally (return -1)))
 
+(defgeneric index (str sub &key start end start2 end2)
+  (:documentation
+   "this is an implementation of str.index"))
+
+(defmethod index ((str string) sub
+                  &key (start 0) (end (length str))
+                  (start2 0) (end2 (length sub)))
+  (let ((find-result (string-find str sub :start start :end end
+                                  :start2 start2 :end2 end2)))
+    (if (= find-result -1)
+        (error 'value-error
+               :format-control
+               "cannot find ~s in ~s"
+               :format-arguments (list sub str))
+        find-result)))
+
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.

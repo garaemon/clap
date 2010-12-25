@@ -17,3 +17,8 @@
   (:documentation
    "this is a condition signaled when a classmethod is called
 with unsupported built-in class."))
+
+(define-condition value-error (simple-error)
+  ()
+  (:documentation
+   "this is a condition to represent ValueError in Python"))
