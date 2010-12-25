@@ -28,6 +28,8 @@
            #:str
            #:sum
            #:zip
+           ;; string.lisp
+           #:capitalize
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
   )
