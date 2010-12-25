@@ -32,6 +32,7 @@
            #:capitalize
            #:center
            #:string-count
+           #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
   )

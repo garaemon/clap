@@ -68,7 +68,7 @@ return the number of occurrences of sub in str.
 (defun %string-count (input-stream sub)
   "this is a heloper function for string-count.
 
-TODO: this implementation is really ugly, we need to refine it."
+TODO: this implementation is really ugly, we need to refine it ASAP."
   (labels ((read-string (stream count)
              (let ((output (make-string-output-stream)))
                (loop for ch = (read-char stream nil nil)
@@ -98,3 +98,18 @@ TODO: this implementation is really ugly, we need to refine it."
          (1+ (%string-count input-stream sub)))
         (t
          (%string-count input-stream sub))))))
+
+(defgeneric startswith (str prefix &key start end)
+  (:documentation
+   "this is an implementation of str.startswith.
+
+return T if string STS starts with string PREFIX."))
+
+(defmethod startswith ((str string) prefix &key (start 0) (end (length str)))
+  "this is an implementation of str.startswith.
+
+return T if string STS starts with string PREFIX."
+  (and (>= (length str)  (length prefix))
+       (string-equal str prefix
+                     :end1 (min end (length prefix))
+                     :start1 start)))
