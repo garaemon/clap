@@ -13,4 +13,4 @@
                                         "condition"
                                         "util"
                                         "meta"))
-             (:file "number" :depends-on ("meta" "impl"))))))
+             (:file "number" :depends-on ("meta" "impl" "condition"))))))

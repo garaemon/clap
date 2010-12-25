@@ -13,6 +13,7 @@
            #:chr
            #:divmod
            #:filter
+           #:fromhex
            #:hash
            #:int
            #:isinstance
