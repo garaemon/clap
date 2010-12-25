@@ -32,6 +32,8 @@
            #:capitalize
            #:center
            #:string-count
+           #:endswith
+           #:expandtabs
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)

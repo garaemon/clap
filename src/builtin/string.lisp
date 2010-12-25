@@ -99,6 +99,34 @@ TODO: this implementation is really ugly, we need to refine it ASAP."
         (t
          (%string-count input-stream sub))))))
 
+(defgeneric endswith (str suffix &key start end)
+  (:documentation
+   "this is an implementation of str.endswith.
+
+return T if string STS ends with string SUFFIX."))
+
+(defmethod endswith ((str string) suffix
+                     &key
+                     (start (- (length str) (length suffix)))
+                     (end (length str)))
+  (and (>= (length str) (length suffix))
+       (string-equal str suffix :start1 start :end1 end)))
+
+(defgeneric expandtabs (str &optional tabsize)
+  (:documentation
+   "this is an implementation of str.expandtabs.
+
+return a copy of STR which all the tab in STR are replaced by TABSIZE spaces."))
+
+(defmethod expandtabs ((str string) &optional (tabsize 8))
+  (let ((output (make-string-output-stream)))
+    (loop for ch across str
+         if (char= ch #\tab)
+         do (dotimes (i tabsize) (write-char #\Space output))
+         else
+         do (write-char ch output))
+    (get-output-stream-string output)))
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.
@@ -106,9 +134,6 @@ TODO: this implementation is really ugly, we need to refine it ASAP."
 return T if string STS starts with string PREFIX."))
 
 (defmethod startswith ((str string) prefix &key (start 0) (end (length str)))
-  "this is an implementation of str.startswith.
-
-return T if string STS starts with string PREFIX."
   (and (>= (length str)  (length prefix))
        (string-equal str prefix
                      :end1 (min end (length prefix))
