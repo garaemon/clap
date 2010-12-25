@@ -121,11 +121,11 @@ is found"
                                           :expected-type 'number
                                           :datum "a"))
     (simple-condition . ,(make-condition 'simple-condition))
-    (condition . ,(make-condition 'condition)) ;
+    (condition . ,(make-condition 'condition))
     (package . ,(allocate-instance (find-class 'package)))
     (broadcast-stream . ,(allocate-instance (find-class 'broadcast-stream)))
     (synonym-stream . ,(allocate-instance (find-class 'synonym-stream)))
-    (echo-stream . ,(allocate-instance (find-class 'echo-stream))) ;
+    (echo-stream . ,(allocate-instance (find-class 'echo-stream)))
     (two-way-stream . ,(allocate-instance (find-class 'two-way-stream)))
     (concatenated-stream . ,(allocate-instance
                              (find-class 'concatenated-stream)))
@@ -180,10 +180,11 @@ is found"
     (vector . :sealed-class)
     (sequence . :sealed-class)
     (t . :sealed-class))
-  "you can find the list of built-in-classes at
-http://www.lispworks.com/documentation/HyperSpec/Body/04_cg.htm#classtypecorrespondence")
+  "associated list of built-in-classes and its objects")
 
 (defun lookup-built-in-class-object (class)
+  "retnrn an object of built-in-class. if no object can be created for
+the class, it returns :sealed-class."
   (cdr (assoc class *built-in-class-instances-table*)))
 
 (defmacro define-class-method-wrapper (name args &optional (documentation nil))
@@ -230,7 +231,7 @@ DEFINE-CLASS-METHOD-WRAPPER.")
    'this-is-an-integer-method)
 (clap-builtin:define-class-method integer-method ((obj real))
    'this-is-real-method)
- (integer-method 1) ; -> this-is-an-integer
- (integer-method 'fixnum) ; -> (integer-method 1) -> this-is-an-integer-method
- (integer-method 'integer) ; -> this-is-an-integer-method
+(integer-method 1) ; -> this-is-an-integer
+(integer-method 'fixnum) ; -> (integer-method 1) -> this-is-an-integer-method
+(integer-method 'integer) ; -> this-is-an-integer-method
 |#
