@@ -199,8 +199,6 @@ return T if all the characters of STR are alphabetic."))
            (return t))
       nil))
 
-
-
 (defgeneric isdigit (str)
   (:documentation
    "this is an implementation of str.isdigit.
@@ -299,6 +297,22 @@ only ASCII codes are supported."))
      finally
        (return calledp)))
 
+(defgeneric join (str strings)
+  (:documentation
+   "this is an implementation of str.join.
+
+return a string which is the concatenation of STRINGS
+using STR as separators."))
+
+(defmethod join ((str string) strings)
+  (if (null strings)
+      ""
+      (let ((output (make-string-output-stream)))
+        (format output (car strings))
+        (dolist (concat-string (cdr strings))
+          (format output str)
+          (format output concat-string))
+        (get-output-stream-string output))))
 
 (defgeneric startswith (str prefix &key start end)
   (:documentation

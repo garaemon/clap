@@ -43,6 +43,7 @@
            #:isspace
            #:istitle
            #:isupper
+           #:join
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
