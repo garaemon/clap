@@ -36,6 +36,13 @@
            #:expandtabs
            #:string-find
            #:index
+           #:isalnum
+           #:isalpha
+           #:isdigit
+           #:islower
+           #:isspace
+           #:istitle
+           #:isupper
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)

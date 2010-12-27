@@ -169,6 +169,136 @@ return a copy of STR which all the tab in STR are replaced by TABSIZE spaces."))
                :format-arguments (list sub str))
         find-result)))
 
+(defgeneric isalnum (str)
+  (:documentation
+   "this is an implementation of str.isalnum.
+
+return T if all the characters of STR are alphanumeric."))
+
+(defmethod isalnum ((str string))
+  (if (> (length str) 0)
+      (loop for ch across str
+         if (not (alphanumericp ch))
+         return nil
+         finally
+           (return t))
+      nil))
+
+(defgeneric isalpha (str)
+  (:documentation
+   "this is an implementation of str.isalpha.
+
+return T if all the characters of STR are alphabetic."))
+
+(defmethod isalpha ((str string))
+  (if (> (length str) 0)
+      (loop for ch across str
+         if (not (alpha-char-p ch))
+         return nil
+         finally
+           (return t))
+      nil))
+
+
+
+(defgeneric isdigit (str)
+  (:documentation
+   "this is an implementation of str.isdigit.
+
+return T if all the characters of STR are digit."))
+
+(defmethod isdigit ((str string))
+  (if (> (length str) 0)
+      (loop for ch across str
+         if (not (digit-char-p ch))
+         return nil
+         finally
+           (return t))
+      nil))
+
+(defgeneric islower (str)
+  (:documentation
+   "this is an implementation of str.islower.
+
+return T if all the characters of STR are lowercase.
+only ASCII codes are supported."))
+
+(defmethod islower ((str string))
+  (loop
+     with calledp = nil
+     for ch across str
+     if (alpha-char-p ch)
+     do (progn
+          (setf calledp t)
+          (if (not (lower-case-p ch))
+              (return nil)))
+     finally
+       (return calledp)))
+
+(defgeneric isspace (str)
+  (:documentation
+   "this is an implementation of str.isspace.
+
+return T if all the characters of STR are whitespace."))
+
+(defmethod isspace ((str string))
+  (if (> (length str) 0)
+      (loop for ch across str
+         if (not (or (char= ch #\space)
+                     (char= ch #\tab)
+                     (char= ch #\newline)))
+         return nil
+         finally
+           (return t))
+      nil))
+
+(defgeneric istitle (str)
+  (:documentation
+   "this is an implementation of str.isspace.
+
+return T if all the characters of STR are titlecased."))
+
+(defmethod istitle ((str string))
+  (let ((whitespaces '(#\space #\tab #\newline #\Linefeed
+                       #\Vt #\Page)))
+    (labels ((whitespace-p (ch)
+               (find ch whitespaces :test #'char=)))
+      (if (> (length str) 0)
+          (loop
+             with should-upper-case = T
+             for ch across str
+             if (whitespace-p ch)
+             do
+               (setf should-upper-case t)
+             else if (and should-upper-case
+                          (not (upper-case-p ch)))
+             return nil
+             else
+             do
+               (setf should-upper-case nil)
+             finally
+               (return t))
+          nil))))
+
+(defgeneric isupper (str)
+  (:documentation
+   "this is an implementation of str.islower.
+
+return T if all the characters of STR are uppercase.
+only ASCII codes are supported."))
+
+(defmethod isupper ((str string))
+  (loop
+     with calledp = nil
+     for ch across str
+     if (alpha-char-p ch)
+     do (progn
+          (setf calledp t)
+          (if (not (upper-case-p ch))
+              (return nil)))
+     finally
+       (return calledp)))
+
 
 (defgeneric startswith (str prefix &key start end)
   (:documentation
