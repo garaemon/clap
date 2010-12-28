@@ -314,6 +314,34 @@ using STR as separators."))
           (format output concat-string))
         (get-output-stream-string output))))
 
+(defgeneric ljust (str width &optional fillchar)
+  (:documentation
+   "this is an implementation of str.ljust.
+
+return a string left-justified in a string of length width.
+you can specify padding character by FILLCHAR. FILLCHAR defaults
+to #\space.
+
+if width is less than the length of STR, LJUST returns STR."))
+
+(defmethod ljust ((str string) width &optional (fillchar #\space))
+  (if (> (length str) width)
+      str
+      (let ((output (make-string width :initial-element fillchar)))
+        (loop
+           for ch across str
+           for i from 0
+           do (setf (elt output i) ch))
+        output)))
+(defgeneric lower (str)
+  (:documentation
+   "this is an implementation of str.lower.
+
+LOWER method return a copy of the string STR converted to lowercase."))
+
+(defmethod lower ((str string))
+  (string-downcase str))
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.

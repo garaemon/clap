@@ -44,6 +44,7 @@
            #:istitle
            #:isupper
            #:join
+           #:ljust
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
