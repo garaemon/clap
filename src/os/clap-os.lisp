@@ -1,33 +1,29 @@
 (defpackage :clap-os
   (:use #:common-lisp)
   (:documentation "fill this documentation")
-  (:export :uname))
+  (:import-from :osicat-posix 
+                . #0=(:uname
+                      :getcwd
+                      :getenv
+                      :setenv
 
-(in-package :clap-os)
-
-(defun uname ()
-  "(values sysname nodename release version machine)"
-  (flet (#+sbcl
-         (uname (arg)
-           (let* ((process (sb-ext:run-program "uname"
-                                               (list arg)
-                                               :input nil
-                                               :output :stream
-                                               :search T))
-                  (output (read-line (sb-impl::process-output process) nil)))
-             (close (sb-impl::process-output process))
-             (string-right-trim clap-string:+whitespace+
-                                output)))
-         #-sbcl
-         (uname (arg) arg))
-    (values
-     ;; sysname
-     (uname "-s")
-     ;; nodename
-     (uname "-n")
-     ;; release
-     (uname "-r")
-     ;; version
-     (uname "-v")
-     ;; machine
-     (uname "-m"))))
+                      :getuid
+                      :setegid
+                      :seteuid
+                      :setpgid
+                      ;; setgroups
+                      :setpgrp
+                      :setregid
+                      :setreuid
+                      :setsid
+                      :setuid
+                      :strerror
+                      :umask
+                      :uname
+                      :unsetenv))
+  #+sbcl (:import-from :sb-posix 
+                       . #1=(:putenv
+                             :getsid
+                             :setresuid))
+  (:export . #0#)
+  #+sbcl (:export . #1#))
