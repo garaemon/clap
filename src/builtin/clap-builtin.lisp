@@ -47,6 +47,7 @@
            #:ljust
            #:lower
            #:lstrip
+           #:partition
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)

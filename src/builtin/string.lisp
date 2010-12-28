@@ -352,6 +352,23 @@ in CHARS."))
 (defmethod lstrip ((str string) &optional chars)
   (string-left-trim chars str))
 
+(defgeneric partition (str separator)
+  (:documentation
+   "this is an implementation of str.partition.
+
+return 3 multiple values. if the string STR has the separator SEPARATOR
+ in itself, PARTITION will return the part before the separator,
+separator itself and the part adter the separator.
+if not, PARTITION will return the string STR itself, and two empty strings."))
+
+(defmethod partition ((str string) separator)
+  (let ((separator-index (string-find str separator)))
+    (if (= separator-index -1)
+        (values str "" "")
+        (let ((first (subseq str 0 separator-index))
+              (rest (subseq str (+ (length separator) separator-index))))
+          (values first separator rest)))))
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.
