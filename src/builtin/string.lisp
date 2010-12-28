@@ -342,6 +342,16 @@ LOWER method return a copy of the string STR converted to lowercase."))
 (defmethod lower ((str string))
   (string-downcase str))
 
+(defgeneric lstrip (str &optional chars)
+  (:documentation
+   "this is an implementation of str.lstrip.
+
+return a copy of the string STR with leading characters are removed if contained
+in CHARS."))
+
+(defmethod lstrip ((str string) &optional chars)
+  (string-left-trim chars str))
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.

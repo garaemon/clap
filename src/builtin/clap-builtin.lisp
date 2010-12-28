@@ -46,6 +46,7 @@
            #:join
            #:ljust
            #:lower
+           #:lstrip
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)
