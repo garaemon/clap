@@ -509,7 +509,7 @@ SPLIT except for scanning from right."))
                         (and maxsplit (> findcount maxsplit)))))
          (loop
             with previous-index = str-length ;will be setf in do-form
-            with findcount = 0            ;will be setf in do-form
+            with findcount = 0               ;will be setf in do-form
             for i from (1- str-length) downto 0
             for ch = (elt str i)
             for previous-whitespacep = t then whitespacep
