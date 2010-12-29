@@ -528,6 +528,17 @@ SPLIT except for scanning from right."))
                   (push (subseq str 0 previous-index) ret))))
     ret))
 
+(defgeneric rstrip (str &optional chars)
+  (:documentation
+   "this is an implementation of str.rstrip.
+
+return a copy of the trailing STR with leading characters are removed
+if contained in CHARS."))
+
+(defmethod rstrip ((str string) &optional chars)
+  (string-left-trim chars str))
+
+
 (defgeneric split (str &optional separator maxsplit)
   (:documentation
    "this is an implementation of str.split.

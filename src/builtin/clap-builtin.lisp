@@ -53,6 +53,7 @@
            #:rindex
            #:rjust
            #:rsplit
+           #:rstrip
            #:split
            #:startswith
            #:define-class-method #:define-class-method-wrapper
