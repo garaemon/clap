@@ -59,6 +59,7 @@
            #:startswith
            #:strip
            #:swapcase
+           #:translate
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet
            #:class-method-not-supported

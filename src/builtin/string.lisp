@@ -613,9 +613,8 @@ if you call with KEEPENDS T, the strings contains newline."))
 return T if string STS starts with string PREFIX."))
 
 (defmethod startswith ((str string) prefix &key (start 0) (end (length str)))
-  (and (>= (length str)  (length prefix))
-       (string-equal str prefix
-                     :end1 (min end (length prefix))
+  (and (>= (length str) (length prefix))
+       (string-equal str prefix :end1 (min end (+ start (length prefix)))
                      :start1 start)))
 
 (defgeneric strip (str &optional chars)
@@ -647,4 +646,38 @@ lowercase characters and downcase characters with upcase characters."))
        do (write-char cased-ch output))
     (get-output-stream-string output)))
 
+(defgeneric translate (str table &optional deletechars)
+  (:documentation
+   "this is an implementation of str.translate.
+
+return a copy of the string STR replacing the strings according
+to the hash table TABLE.
+if DELETECHARS is specified, the characters of DELETECHARS appered in STR
+are removed"))
+
+(defmethod translate ((str string) table &optional (deletechars nil))
+  (let ((output (make-string-output-stream))
+        (str-length (length str)))
+    (loop
+       with i = 0                   ;i will be incremented by manually
+       while (< i str-length)
+       for ch = (elt str i)
+       for deletep = (find ch deletechars)
+       if (not deletep)
+       do (if table
+              (loop
+                 for replace-key being the hash-keys in table
+                 using (hash-value replace-value)
+                 if (startswith str replace-key :start i)
+                 do (progn (format output replace-value)
+                           (incf i (length replace-key)) ;skip i
+                           (return))
+                 finally (progn
+                           (incf i)
+                           (write-char ch output)))
+              (progn
+                (incf i)
+                (write-char ch output)))
+       else do (incf i))                ;no copying
+    (get-output-stream-string output)))
   
