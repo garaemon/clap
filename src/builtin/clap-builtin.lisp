@@ -52,6 +52,8 @@
            #:rfind
            #:rindex
            #:rjust
+           #:rsplit
+           #:split
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet

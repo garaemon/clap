@@ -1,5 +1,17 @@
 (in-package :clap-builtin)
 
+(defconstant* +whitespace-characters+
+    '(#\Tab
+      #\Linefeed
+      #\Vt                      ;x0b
+      #\Page                    ;x0c
+      #\Return
+      #\Space)
+  "a list of whitespace characters")
+
+(defun whitespacep (ch)
+  (find ch +whitespace-characters+ :test #'char=))
+
 (defgeneric capitalize (str)
   (:documentation
    "this is an implementation of str.capitalize.
@@ -248,9 +260,7 @@ return T if all the characters of STR are whitespace."))
 (defmethod isspace ((str string))
   (if (> (length str) 0)
       (loop for ch across str
-         if (not (or (char= ch #\space)
-                     (char= ch #\tab)
-                     (char= ch #\newline)))
+         if (not (whitespacep ch))
          return nil
          finally
            (return t))
@@ -263,26 +273,22 @@ return T if all the characters of STR are whitespace."))
 return T if all the characters of STR are titlecased."))
 
 (defmethod istitle ((str string))
-  (let ((whitespaces '(#\space #\tab #\newline #\Linefeed
-                       #\Vt #\Page)))
-    (labels ((whitespace-p (ch)
-               (find ch whitespaces :test #'char=)))
-      (if (> (length str) 0)
-          (loop
-             with should-upper-case = T
-             for ch across str
-             if (whitespace-p ch)
-             do
-               (setf should-upper-case t)
-             else if (and should-upper-case
-                          (not (upper-case-p ch)))
-             return nil
-             else
-             do
-               (setf should-upper-case nil)
-             finally
-               (return t))
-          nil))))
+  (if (> (length str) 0)
+      (loop
+         with should-upper-case = T
+         for ch across str
+         if (whitespacep ch)
+         do
+           (setf should-upper-case t)
+         else if (and should-upper-case
+                      (not (upper-case-p ch)))
+         return nil
+         else
+         do
+           (setf should-upper-case nil)
+         finally
+           (return t))
+      nil))
 
 (defgeneric isupper (str)
   (:documentation
@@ -473,6 +479,66 @@ if width is less than the length of STR, RJUST returns STR."))
            do (setf (elt output i) ch))
         output)))
 
+(defgeneric rsplit (str &optional separator maxsplit)
+  (:documentation
+   "this is an implementation of str.rsplit.
+
+split the string STR using SEPARATOR as a delimiter and return the list.
+if SEPARATOR is not specified or NIL, SEPARATOR default to whitespaces.
+if MAXSPLIT is specified, at most MAXSPLIT splits are done. RSPLIT behaves like
+SPLIT except for scanning from right."))
+
+(defmethod rsplit (str
+                   &optional (separator nil separator-specified-p)
+                   (maxsplit nil))
+  )
+
+(defgeneric split (str &optional separator maxsplit)
+  (:documentation
+   "this is an implementation of str.split.
+
+split the string STR using SEPARATOR as a delimiter and return the list.
+if SEPARATOR is not specified or NIL, SEPARATOR default to whitespaces.
+if MAXSPLIT is specified, at most MAXSPLIT splits are done."))
+
+(defmethod split ((str string)
+                  &optional (separator nil separator-specified-p)
+                  (maxsplit nil))
+  
+  (let ((ret nil))
+    (if  separator
+         (let ((separator-length (length separator)))
+           (loop
+              for previous-findindex = 0
+              then (+ findindex separator-length)
+              for findindex = (string-find str separator)
+              then (string-find str separator :start (1+ previous-findindex))
+              for findcount from 1
+              if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
+              do (push (subseq str previous-findindex) ret)
+              else
+              do (push (subseq str previous-findindex findindex) ret)
+              until (or (= findindex -1) (and maxsplit (> findcount maxsplit)))))
+         (loop
+            with previous-index = 0       ;will be setf in do-form
+            with findcount = 0            ;will be setf in do-form
+            for i from 0 to (1- (length str))
+            for ch = (elt str i)
+            for previous-whitespacep = t then whitespacep
+            for whitespacep = (whitespacep ch)
+            if (and maxsplit (> findcount maxsplit))
+            do (progn
+                 (push (subseq str previous-index) ret)
+                 (return ret))
+            else if (and (not (whitespacep ch)) previous-whitespacep)
+            do (progn (setf previous-index i)
+                      (incf findcount))
+            else if (and (whitespacep ch) (not previous-whitespacep))
+            do (push (subseq str previous-index i) ret)
+            finally      ;the string ends with non-whitespace character
+              (if (not whitespacep) 
+                  (push (subseq str previous-index i) ret))))
+    (nreverse ret)))
 
 (defgeneric startswith (str prefix &key start end)
   (:documentation
