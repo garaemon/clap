@@ -74,42 +74,13 @@ return the number of occurrences of sub in str.
 
    (string-count \"foobar\" \"foo\") => 1
    (string-count \"foobar\" \"foo\" :start 1) => 0"
-  (let ((ss (make-string-input-stream str start end)))
-    (%string-count ss sub)))
-
-(defun %string-count (input-stream sub)
-  "this is a heloper function for string-count.
-
-TODO: this implementation is really ugly, we need to refine it ASAP."
-  (labels ((read-string (stream count)
-             (let ((output (make-string-output-stream)))
-               (loop for ch = (read-char stream nil nil)
-                  for i from 0
-                  until (or (null ch)
-                            (> i count))
-                  do (write-char ch output))
-               (get-output-stream-string output)))
-           (string-stream-starts-with
-               (ch input-stream sub)
-             (unread-char ch input-stream) ;pushback the read character
-             (let ((str (read-string input-stream
-                                     (1- (length sub)))))
-               (if (and (>= (length str)  (length sub))
-                        (string-equal str sub :end1 (length sub)))
-                   t
-                   (progn           ; pushback all the read characters
-                     (loop for ch across str
-                        do (unread-char ch input-stream))
-                     ; need to read one character to proceed stream
-                     (read-char input-stream)
-                     nil)))))
-    (let ((ch (read-char input-stream nil nil)))
-      (cond
-        ((null ch) 0)
-        ((string-stream-starts-with ch input-stream sub)
-         (1+ (%string-count input-stream sub)))
-        (t
-         (%string-count input-stream sub))))))
+  (let ((str-length (length str)))
+    (loop
+       for i = 0 then (1+ index)    ;i will be incremented by manually
+       for count from 0
+       for index = (string-find str sub :start i)
+       while (not (= index -1))
+       finally (return count))))
 
 (defgeneric endswith (str suffix &key start end)
   (:documentation
