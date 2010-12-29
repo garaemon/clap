@@ -158,7 +158,10 @@ if not found, return -1."))
 
 (defgeneric index (str sub &key start end start2 end2)
   (:documentation
-   "this is an implementation of str.index"))
+   "this is an implementation of str.index.
+
+it behaves like STRING-FIND, however INDEX does not retun -1 if SUB is not found
+in STR, but raise value-error condition."))
 
 (defmethod index ((str string) sub
                   &key (start 0) (end (length str))
@@ -336,6 +339,7 @@ if width is less than the length of STR, LJUST returns STR."))
            for i from 0
            do (setf (elt output i) ch))
         output)))
+
 (defgeneric lower (str)
   (:documentation
    "this is an implementation of str.lower.
@@ -429,6 +433,45 @@ if not found, return -1."))
              (return (- i (1- end2)))))
        finally (return -1)))
 
+(defgeneric rindex (str sub &key start end start2 end2)
+  (:documentation
+   "this is an implementation of str.rindex.
+
+it behaves like STRING-RFIND, however RINDEX does not retun -1 if SUB is not found
+in STR, but raise value-error condition."))
+
+(defmethod rindex ((str string) sub
+                  &key (start 0) (end (length str))
+                  (start2 0) (end2 (length sub)))
+  (let ((find-result (rfind str sub :start start :end end
+                            :start2 start2 :end2 end2)))
+    (if (= find-result -1)
+        (error 'value-error
+               :format-control
+               "cannot find ~s in ~s"
+               :format-arguments (list sub str))
+        find-result)))
+
+(defgeneric rjust (str width &optional fillchar)
+    (:documentation
+   "this is an implementation of str.rjust.
+
+return a string right-justified in a string of length width.
+you can specify padding character by FILLCHAR. FILLCHAR defaults
+to #\space.
+
+if width is less than the length of STR, RJUST returns STR."))
+
+(defmethod rjust ((str string) width &optional (fillchar #\space))
+  (if (> (length str) width)
+      str
+      (let ((output (make-string width :initial-element fillchar)))
+        (loop
+           for ch-index from (1- (length str)) downto 0
+           for ch = (elt str ch-index)
+           for i downfrom (1- width)
+           do (setf (elt output i) ch))
+        output)))
 
 
 (defgeneric startswith (str prefix &key start end)

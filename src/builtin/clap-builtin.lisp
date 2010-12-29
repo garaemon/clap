@@ -50,6 +50,8 @@
            #:partition
            #:string-replace
            #:rfind
+           #:rindex
+           #:rjust
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet
