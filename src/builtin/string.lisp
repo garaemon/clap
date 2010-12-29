@@ -646,6 +646,15 @@ lowercase characters and downcase characters with upcase characters."))
        do (write-char cased-ch output))
     (get-output-stream-string output)))
 
+(defgeneric title (str)
+  (:documentation
+   "this is an implementation of str.title.
+
+return a titlecased copy of the string STR."))
+
+(defmethod title ((str string))
+  (string-capitalize str))
+
 (defgeneric translate (str table &optional deletechars)
   (:documentation
    "this is an implementation of str.translate.
@@ -669,11 +678,11 @@ are removed"))
                  for replace-key being the hash-keys in table
                  using (hash-value replace-value)
                  if (startswith str replace-key :start i)
-                 do (progn (format output replace-value)
+                 do (progn (format output replace-value) ;copy replace-value
                            (incf i (length replace-key)) ;skip i
                            (return))
                  finally (progn
-                           (incf i)
+                           (incf i)     ;copy ch and increment i
                            (write-char ch output)))
               (progn
                 (incf i)
@@ -681,3 +690,22 @@ are removed"))
        else do (incf i))                ;no copying
     (get-output-stream-string output)))
   
+(defgeneric upper (str)
+  (:documentation
+   "this is an implementation of str.upper.
+
+UPPER method return a copy of the string STR converted to uppercase."))
+
+(defmethod upper ((str string))
+  (string-upcase str))
+
+(defgeneric zfill (str width)
+  (:documentation
+   "this is an implementation of str.zfill.
+
+return a string left-justified in a string of length width padding
+by #\0"))
+
+(defmethod zfill ((str string) width)
+  (rjust str width #\0))
+

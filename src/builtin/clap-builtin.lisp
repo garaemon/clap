@@ -59,7 +59,10 @@
            #:startswith
            #:strip
            #:swapcase
+           #:title
            #:translate
+           #:upper
+           #:zfill
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet
            #:class-method-not-supported
