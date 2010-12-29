@@ -57,6 +57,8 @@
            #:split
            #:splitlines
            #:startswith
+           #:strip
+           #:swapcase
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet
            #:class-method-not-supported

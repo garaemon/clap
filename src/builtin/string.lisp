@@ -362,7 +362,7 @@ LOWER method return a copy of the string STR converted to lowercase."))
 return a copy of the string STR with leading characters are removed if contained
 in CHARS."))
 
-(defmethod lstrip ((str string) &optional chars)
+(defmethod lstrip ((str string) &optional (chars " "))
   (string-left-trim chars str))
 
 (defgeneric partition (str separator)
@@ -535,7 +535,7 @@ SPLIT except for scanning from right."))
 return a copy of the trailing STR with leading characters are removed
 if contained in CHARS."))
 
-(defmethod rstrip ((str string) &optional chars)
+(defmethod rstrip ((str string) &optional (chars " "))
   (string-left-trim chars str))
 
 
@@ -617,3 +617,34 @@ return T if string STS starts with string PREFIX."))
        (string-equal str prefix
                      :end1 (min end (length prefix))
                      :start1 start)))
+
+(defgeneric strip (str &optional chars)
+  (:documentation
+   "this is an implementation of str.strip.
+
+return a copy of the string STR removing the characters
+contained in CHARS from left and right side."))
+
+(defmethod strip ((str string) &optional (chars " "))
+  (string-trim chars str))
+
+(defgeneric swapcase (str)
+  (:documentation
+   "this is an implementation of str.swapcase.
+
+return a copy of the string STR swapping uppercase characters with
+lowercase characters and downcase characters with upcase characters."))
+
+(defmethod swapcase ((str string))
+  (let ((output (make-string-output-stream)))
+    (loop
+       for ch across str
+       for cased-ch = (cond ((upper-case-p ch)
+                             (char-downcase ch))
+                            ((lower-case-p ch)
+                             (char-upcase ch))
+                            (t ch))
+       do (write-char cased-ch output))
+    (get-output-stream-string output)))
+
+  
