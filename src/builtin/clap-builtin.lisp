@@ -48,6 +48,8 @@
            #:lower
            #:lstrip
            #:partition
+           #:string-replace
+           #:rfind
            #:startswith
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet)

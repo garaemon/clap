@@ -129,7 +129,10 @@ return a copy of STR which all the tab in STR are replaced by TABSIZE spaces."))
 
 (defgeneric string-find (str sub &key start end start2 end2)
   (:documentation
-   "this is an implementation of str.find."))
+   "this is an implementation of str.find.
+
+return the lowest index in the string STR where SUB is found.
+if not found, return -1."))
 
 (defmethod string-find ((str string) sub
                         &key (start 0) (end (length str))
@@ -368,6 +371,63 @@ if not, PARTITION will return the string STR itself, and two empty strings."))
         (let ((first (subseq str 0 separator-index))
               (rest (subseq str (+ (length separator) separator-index))))
           (values first separator rest)))))
+
+(defgeneric string-replace (str old new &optional count)
+  (:documentation
+   "this is an implementation of str.replace.
+
+return a copy of the string STR with replacing OLD in STR by NEW."))
+
+(defmethod string-replace ((str string) old new
+                           &optional (count nil count-specified-p))
+  (let ((ret (make-string-output-stream))
+        (old-length (length old))
+        (new-length (length new)))
+    (loop
+       for start-count = 0 then (+ index old-length)
+       for index = (string-find str old :start start-count)
+       and prev-index = (- old-length) then index
+       until (= index -1)
+       do (progn
+            (loop
+               for i from start-count below index
+               do (write-char (elt str i) ret))
+            (dotimes (i new-length)
+              (write-char (elt new i) ret)))
+       finally
+         (loop                          ;copy the rest string
+            for i from (+ old-length prev-index) below (length str)
+            for ch = (elt str i)
+            do (write-char (elt str i) ret)))
+    (get-output-stream-string ret)))
+
+(defgeneric rfind (str sub &key start end start2 end2)
+  (:documentation
+   "this is an implementation of str.rfind.
+
+return the highest index in the string STR where SUB is found.
+if not found, return -1."))
+
+(defmethod rfind ((str string) sub
+                  &key (start 0) (end (length str))
+                  (start2 0) (end2 (length sub)))
+  (loop
+     with sub-final = (elt sub (1- end2))
+     for i from (1- end) downto (1- (+ start end2))
+     for ch = (elt str i)
+     if (char= ch sub-final)
+     do
+       (let ((matchedp (loop
+                          for ii downfrom (1- i)
+                          for j from (1- (1- end2)) downto start2
+                          for ch1 = (elt str ii)
+                          for ch2 = (elt sub j)
+                          if (not (char= ch1 ch2))
+                          return nil
+                          finally (return t))))
+         (if matchedp
+             (return (- i (1- end2)))))
+       finally (return -1)))
 
 (defgeneric startswith (str prefix &key start end)
   (:documentation
