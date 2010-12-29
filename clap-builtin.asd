@@ -9,9 +9,9 @@
              (:file "util" :depends-on ("clap-builtin"))
              (:file "condition" :depends-on ("clap-builtin"))
              (:file "meta" :depends-on ("clap-builtin" "condition" "util"))
-             (:file "impl" :depends-on ("clap-builtin"
+             (:file "func" :depends-on ("clap-builtin"
                                         "condition"
                                         "util"
                                         "meta"))
-             (:file "number" :depends-on ("meta" "impl" "condition"))
-             (:file "string" :depends-on ("meta" "impl" "condition"))))))
+             (:file "number" :depends-on ("meta" "func" "condition"))
+             (:file "string" :depends-on ("meta" "func" "condition"))))))
