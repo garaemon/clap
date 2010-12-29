@@ -587,6 +587,25 @@ if MAXSPLIT is specified, at most MAXSPLIT splits are done."))
                  (push (subseq str previous-index i) ret))))
     (nreverse ret)))
 
+(defgeneric splitlines (str &optional keepends)
+  (:documentation
+   "this is an implementation of str.splitlines.
+
+return a list of the strings which are the lines splitted from STR.
+if you call with KEEPENDS T, the strings contains newline."))
+
+(defmethod splitlines ((str string) &optional (keepends nil))
+  (let ((str-length (length str)))
+    (loop
+       for prev-index = 0 then number-index
+       for index = (position #\NewLine str :start prev-index)
+       then (position #\NewLine str :start prev-index)
+       for number-index = (if index (1+ index) (1+ (length str)))
+       for sub = (if keepends (subseq str prev-index number-index)
+                     (subseq str prev-index (1- number-index)))
+       collect sub
+       until (or (null index) (>= number-index str-length)))))
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.
