@@ -52,5 +52,7 @@
            #:rfind
            #:startswith
            #:define-class-method #:define-class-method-wrapper
-           #:not-implemented-yet)
+           #:not-implemented-yet
+           #:class-method-not-supported
+           #:value-error)
   )

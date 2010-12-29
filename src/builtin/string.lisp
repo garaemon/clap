@@ -429,6 +429,8 @@ if not found, return -1."))
              (return (- i (1- end2)))))
        finally (return -1)))
 
+
+
 (defgeneric startswith (str prefix &key start end)
   (:documentation
    "this is an implementation of str.startswith.
