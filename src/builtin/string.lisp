@@ -488,10 +488,45 @@ if SEPARATOR is not specified or NIL, SEPARATOR default to whitespaces.
 if MAXSPLIT is specified, at most MAXSPLIT splits are done. RSPLIT behaves like
 SPLIT except for scanning from right."))
 
-(defmethod rsplit (str
+(defmethod rsplit ((str string)
                    &optional (separator nil separator-specified-p)
                    (maxsplit nil))
-  )
+  (let ((ret nil)
+        (str-length (length str)))
+    (if separator
+         (let ((separator-length (length separator)))
+           (loop
+              for previous-findindex = str-length
+              then (1+ (- findindex separator-length))
+              for findindex = (rfind str separator)
+              then (rfind str separator :end previous-findindex)
+              for findcount from 1
+              if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
+              do (push (subseq str 0 previous-findindex) ret)
+              else
+              do (push (subseq str (1+ findindex) previous-findindex) ret)
+              until (or (= findindex -1)
+                        (and maxsplit (> findcount maxsplit)))))
+         (loop
+            with previous-index = str-length ;will be setf in do-form
+            with findcount = 0            ;will be setf in do-form
+            for i from (1- str-length) downto 0
+            for ch = (elt str i)
+            for previous-whitespacep = t then whitespacep
+            for whitespacep = (whitespacep ch)
+            if (and maxsplit (> findcount maxsplit))
+            do (progn
+                 (push (subseq str 0 previous-index) ret)
+                 (return ret))
+            else if (and (not (whitespacep ch)) previous-whitespacep)
+            do (progn (setf previous-index (1+ i))
+                      (incf findcount))
+            else if (and (whitespacep ch) (not previous-whitespacep))
+            do (push (subseq str (1+ i) previous-index) ret)
+            finally      ;the string ends with non-whitespace character
+              (if (not whitespacep)
+                  (push (subseq str 0 previous-index) ret))))
+    ret))
 
 (defgeneric split (str &optional separator maxsplit)
   (:documentation
@@ -506,38 +541,39 @@ if MAXSPLIT is specified, at most MAXSPLIT splits are done."))
                   (maxsplit nil))
   
   (let ((ret nil))
-    (if  separator
-         (let ((separator-length (length separator)))
-           (loop
-              for previous-findindex = 0
-              then (+ findindex separator-length)
-              for findindex = (string-find str separator)
-              then (string-find str separator :start (1+ previous-findindex))
-              for findcount from 1
-              if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
-              do (push (subseq str previous-findindex) ret)
-              else
-              do (push (subseq str previous-findindex findindex) ret)
-              until (or (= findindex -1) (and maxsplit (> findcount maxsplit)))))
-         (loop
-            with previous-index = 0       ;will be setf in do-form
-            with findcount = 0            ;will be setf in do-form
-            for i from 0 to (1- (length str))
-            for ch = (elt str i)
-            for previous-whitespacep = t then whitespacep
-            for whitespacep = (whitespacep ch)
-            if (and maxsplit (> findcount maxsplit))
-            do (progn
-                 (push (subseq str previous-index) ret)
-                 (return ret))
-            else if (and (not (whitespacep ch)) previous-whitespacep)
-            do (progn (setf previous-index i)
-                      (incf findcount))
-            else if (and (whitespacep ch) (not previous-whitespacep))
-            do (push (subseq str previous-index i) ret)
-            finally      ;the string ends with non-whitespace character
-              (if (not whitespacep) 
-                  (push (subseq str previous-index i) ret))))
+    (if separator
+        (let ((separator-length (length separator)))
+          (loop
+             for previous-findindex = 0
+             then (+ findindex separator-length)
+             for findindex = (string-find str separator)
+             then (string-find str separator :start previous-findindex)
+             for findcount from 1
+             if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
+             do (push (subseq str previous-findindex) ret)
+             else
+             do (push (subseq str previous-findindex findindex) ret)
+             until (or (= findindex -1)
+                       (and maxsplit (> findcount maxsplit)))))
+        (loop
+           with previous-index = 0       ;will be setf in do-form
+           with findcount = 0            ;will be setf in do-form
+           for i from 0 to (1- (length str))
+           for ch = (elt str i)
+           for previous-whitespacep = t then whitespacep
+           for whitespacep = (whitespacep ch)
+           if (and maxsplit (> findcount maxsplit))
+           do (progn
+                (push (subseq str previous-index) ret)
+                (return ret))
+           else if (and (not (whitespacep ch)) previous-whitespacep)
+           do (progn (setf previous-index i)
+                     (incf findcount))
+           else if (and (whitespacep ch) (not previous-whitespacep))
+           do (push (subseq str previous-index i) ret)
+           finally      ;the string ends with non-whitespace character
+             (if (not whitespacep) 
+                 (push (subseq str previous-index i) ret))))
     (nreverse ret)))
 
 (defgeneric startswith (str prefix &key start end)
