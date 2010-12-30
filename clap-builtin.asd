@@ -13,5 +13,7 @@
                                         "condition"
                                         "util"
                                         "meta"))
-             (:file "number" :depends-on ("meta" "func" "condition"))
-             (:file "string" :depends-on ("meta" "func" "condition"))))))
+             (:file "string" :depends-on ("meta" "func" "condition"))
+             (:file "number" :depends-on ("meta" "func" "condition"
+                                                 "string"))
+             (:file "set" :depends-on ("meta" "func" "condition"))))))
