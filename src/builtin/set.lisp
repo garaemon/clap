@@ -49,8 +49,7 @@ return T if all the menbers of OTHER is included in SET."))
   (:documentation
    "this is an implementation of set.symmetric_difference.
 
-"
-   ))
+return another set with the elements in either SET or OTHER but not in both."))
 
 (defmethod symmetric-difference ((set list) (other list) &key
                                  (test #'eql))
