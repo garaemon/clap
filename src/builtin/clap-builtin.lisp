@@ -73,7 +73,9 @@
            #:symmetric-difference
            #:isdisjoint
            #:copy
+           ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
+           ;; condition.lisp
            #:not-implemented-yet
            #:class-method-not-supported
            #:value-error)
