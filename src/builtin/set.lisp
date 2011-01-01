@@ -61,7 +61,7 @@ return T if SET and OTHER does have any common elements."))
 
 (defgeneric copy (set)
   (:documentation
-   "this is an implementation of set.copy.
+   "this is an implementation of set.copy and dict.copy.
 
 return a copy of SET."))
 
