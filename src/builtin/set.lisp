@@ -50,6 +50,7 @@ return another set including all the members of SET and OTHER."))
 (defmethod union ((set list) (other list) &key (test #'eql))
   (remove-duplicates (append set other) :test test))
 
+#|
 (defgeneric intersection (set other &key test)
   (:documentation
    "this is an implementation of set.intersection.
@@ -61,3 +62,4 @@ return another set with the common elements to SET and OTHER"))
      for element in set
      if (find element other :test test)
      collect element))
+|#
