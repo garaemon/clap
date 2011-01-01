@@ -10,7 +10,7 @@
   "a list of whitespace characters")
 
 (defun whitespacep (ch)
-  (find ch +whitespace-characters+ :test #'char=))
+  (cl:find ch +whitespace-characters+ :test #'char=))
 
 (defgeneric capitalize (str)
   (:documentation
@@ -56,7 +56,7 @@ used for padding.
             (replace ret str :start1 start :end1 (+ start string-length))
             ret)))))
 
-(defgeneric string-count (str sub &key start end)
+(defgeneric count (str sub &key start end)
   (:documentation
    "this is an implementation of str.count.
 
@@ -65,20 +65,20 @@ return the number of occurrences of sub in str.
 we cannot use COUNT symbol to implement it, because COUNT
 symbol collides with cl-users package."))
 
-(defmethod string-count ((str string) sub &key (start 0) (end (length str)))
+(defmethod count ((str string) sub &key (start 0) (end (length str)))
   "this is an implementation of str.count.
 
 return the number of occurrences of sub in str.
 
  example::
 
-   (string-count \"foobar\" \"foo\") => 1
-   (string-count \"foobar\" \"foo\" :start 1) => 0"
+   (count \"foobar\" \"foo\") => 1
+   (count \"foobar\" \"foo\" :start 1) => 0"
   (let ((str-length (length str)))
     (loop
        for i = 0 then (1+ index)    ;i will be incremented by manually
        for count from 0
-       for index = (string-find str sub :start i)
+       for index = (find str sub :start i)
        while (not (= index -1))
        finally (return count))))
 
@@ -104,22 +104,22 @@ return a copy of STR which all the tab in STR are replaced by TABSIZE spaces."))
 (defmethod expandtabs ((str string) &optional (tabsize 8))
   (let ((output (make-string-output-stream)))
     (loop for ch across str
-         if (char= ch #\tab)
-         do (dotimes (i tabsize) (write-char #\Space output))
-         else
-         do (write-char ch output))
+       if (char= ch #\tab)
+       do (dotimes (i tabsize) (write-char #\Space output))
+       else
+       do (write-char ch output))
     (get-output-stream-string output)))
 
-(defgeneric string-find (str sub &key start end start2 end2)
+(defgeneric find (str sub &key start end start2 end2)
   (:documentation
    "this is an implementation of str.find.
 
 return the lowest index in the string STR where SUB is found.
 if not found, return -1."))
 
-(defmethod string-find ((str string) sub
-                        &key (start 0) (end (length str))
-                        (start2 0) (end2 (length sub)))
+(defmethod find ((str string) sub
+                 &key (start 0) (end (length str))
+                 (start2 0) (end2 (length sub)))
   (loop
      with sub-initial = (elt sub start2)
      for i from start to (- end end2)
@@ -143,14 +143,14 @@ if not found, return -1."))
   (:documentation
    "this is an implementation of str.index.
 
-it behaves like STRING-FIND, however INDEX does not retun -1 if SUB is not found
+it behaves like FIND, however INDEX does not retun -1 if SUB is not found
 in STR, but raise value-error condition."))
 
 (defmethod index ((str string) sub
                   &key (start 0) (end (length str))
                   (start2 0) (end2 (length sub)))
-  (let ((find-result (string-find str sub :start start :end end
-                                  :start2 start2 :end2 end2)))
+  (let ((find-result (find str sub :start start :end end
+                           :start2 start2 :end2 end2)))
     (if (= find-result -1)
         (error 'value-error
                :format-control
@@ -346,7 +346,7 @@ separator itself and the part adter the separator.
 if not, PARTITION will return the string STR itself, and two empty strings."))
 
 (defmethod partition ((str string) separator)
-  (let ((separator-index (string-find str separator)))
+  (let ((separator-index (find str separator)))
     (if (= separator-index -1)
         (values str "" "")
         (let ((first (subseq str 0 separator-index))
@@ -366,7 +366,7 @@ return a copy of the string STR with replacing OLD in STR by NEW."))
         (new-length (length new)))
     (loop
        for start-count = 0 then (+ index old-length)
-       for index = (string-find str old :start start-count)
+       for index = (find str old :start start-count)
        and prev-index = (- old-length) then index
        until (= index -1)
        do (progn
@@ -408,7 +408,7 @@ if not found, return -1."))
                           finally (return t))))
          (if matchedp
              (return (- i (1- end2)))))
-       finally (return -1)))
+     finally (return -1)))
 
 (defgeneric rindex (str sub &key start end start2 end2)
   (:documentation
@@ -418,8 +418,8 @@ it behaves like STRING-RFIND, however RINDEX does not retun -1 if SUB is not fou
 in STR, but raise value-error condition."))
 
 (defmethod rindex ((str string) sub
-                  &key (start 0) (end (length str))
-                  (start2 0) (end2 (length sub)))
+                   &key (start 0) (end (length str))
+                   (start2 0) (end2 (length sub)))
   (let ((find-result (rfind str sub :start start :end end
                             :start2 start2 :end2 end2)))
     (if (= find-result -1)
@@ -430,7 +430,7 @@ in STR, but raise value-error condition."))
         find-result)))
 
 (defgeneric rjust (str width &optional fillchar)
-    (:documentation
+  (:documentation
    "this is an implementation of str.rjust.
 
 return a string right-justified in a string of length width.
@@ -465,38 +465,38 @@ SPLIT except for scanning from right."))
   (let ((ret nil)
         (str-length (length str)))
     (if separator
-         (let ((separator-length (length separator)))
-           (loop
-              for previous-findindex = str-length
-              then (1+ (- findindex separator-length))
-              for findindex = (rfind str separator)
-              then (rfind str separator :end previous-findindex)
-              for findcount from 1
-              if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
-              do (push (subseq str 0 previous-findindex) ret)
-              else
-              do (push (subseq str (1+ findindex) previous-findindex) ret)
-              until (or (= findindex -1)
-                        (and maxsplit (> findcount maxsplit)))))
-         (loop
-            with previous-index = str-length ;will be setf in do-form
-            with findcount = 0               ;will be setf in do-form
-            for i from (1- str-length) downto 0
-            for ch = (elt str i)
-            for previous-whitespacep = t then whitespacep
-            for whitespacep = (whitespacep ch)
-            if (and maxsplit (> findcount maxsplit))
-            do (progn
-                 (push (subseq str 0 previous-index) ret)
-                 (return ret))
-            else if (and (not (whitespacep ch)) previous-whitespacep)
-            do (progn (setf previous-index (1+ i))
-                      (incf findcount))
-            else if (and (whitespacep ch) (not previous-whitespacep))
-            do (push (subseq str (1+ i) previous-index) ret)
-            finally      ;the string ends with non-whitespace character
-              (if (not whitespacep)
-                  (push (subseq str 0 previous-index) ret))))
+        (let ((separator-length (length separator)))
+          (loop
+             for previous-findindex = str-length
+             then (1+ (- findindex separator-length))
+             for findindex = (rfind str separator)
+             then (rfind str separator :end previous-findindex)
+             for findcount from 1
+             if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
+             do (push (subseq str 0 previous-findindex) ret)
+             else
+             do (push (subseq str (1+ findindex) previous-findindex) ret)
+             until (or (= findindex -1)
+                       (and maxsplit (> findcount maxsplit)))))
+        (loop
+           with previous-index = str-length ;will be setf in do-form
+           with findcount = 0               ;will be setf in do-form
+           for i from (1- str-length) downto 0
+           for ch = (elt str i)
+           for previous-whitespacep = t then whitespacep
+           for whitespacep = (whitespacep ch)
+           if (and maxsplit (> findcount maxsplit))
+           do (progn
+                (push (subseq str 0 previous-index) ret)
+                (return ret))
+           else if (and (not (whitespacep ch)) previous-whitespacep)
+           do (progn (setf previous-index (1+ i))
+                     (incf findcount))
+           else if (and (whitespacep ch) (not previous-whitespacep))
+           do (push (subseq str (1+ i) previous-index) ret)
+           finally      ;the string ends with non-whitespace character
+             (if (not whitespacep)
+                 (push (subseq str 0 previous-index) ret))))
     ret))
 
 (defgeneric rstrip (str &optional chars)
@@ -528,8 +528,8 @@ if MAXSPLIT is specified, at most MAXSPLIT splits are done."))
           (loop
              for previous-findindex = 0
              then (+ findindex separator-length)
-             for findindex = (string-find str separator)
-             then (string-find str separator :start previous-findindex)
+             for findindex = (find str separator)
+             then (find str separator :start previous-findindex)
              for findcount from 1
              if (or (= findindex -1) (and maxsplit (> findcount maxsplit)))
              do (push (subseq str previous-findindex) ret)
@@ -642,7 +642,7 @@ are removed"))
        with i = 0                   ;i will be incremented by manually
        while (< i str-length)
        for ch = (elt str i)
-       for deletep = (find ch deletechars)
+       for deletep = (cl:find ch deletechars)
        if (not deletep)
        do (if table
               (loop
@@ -660,7 +660,7 @@ are removed"))
                 (write-char ch output)))
        else do (incf i))                ;no copying
     (get-output-stream-string output)))
-  
+
 (defgeneric upper (str)
   (:documentation
    "this is an implementation of str.upper.
