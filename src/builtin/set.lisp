@@ -75,3 +75,5 @@ return T if SET and OTHER does have any common elements."))
 
 return a copy of SET."))
 
+(defmethod copy ((set list))
+  (copy-list set))
