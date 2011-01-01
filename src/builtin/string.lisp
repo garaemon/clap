@@ -353,13 +353,13 @@ if not, PARTITION will return the string STR itself, and two empty strings."))
               (rest (subseq str (+ (length separator) separator-index))))
           (values first separator rest)))))
 
-(defgeneric string-replace (str old new &optional count)
+(defgeneric replace (str old new &optional count)
   (:documentation
    "this is an implementation of str.replace.
 
 return a copy of the string STR with replacing OLD in STR by NEW."))
 
-(defmethod string-replace ((str string) old new
+(defmethod replace ((str string) old new
                            &optional (count nil count-specified-p))
   (let ((ret (make-string-output-stream))
         (old-length (length old))
