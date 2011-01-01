@@ -74,6 +74,7 @@
            #:isdisjoint
            #:copy
            #:update
+           #:pop
            ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
            ;; condition.lisp
