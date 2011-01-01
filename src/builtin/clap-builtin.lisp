@@ -74,6 +74,8 @@
            #:union #:intersection       ;cl:union, cl:intersection
            #:difference                 ;cl:set-difference
            #:symmetric-difference
+           #:isdisjoint
+           #:copy
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet
            #:class-method-not-supported

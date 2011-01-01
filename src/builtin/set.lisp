@@ -25,7 +25,7 @@ return T if all the menbers of SET is included in OTHER."))
 (defmethod issubset ((set list) (other list) &key (test #'eql))
   (loop
      for element in set
-     if (not (find element other :test test))
+     if (not (cl:find element other :test test))
      do (return nil)
      finally (return t)))
 
@@ -39,7 +39,7 @@ return T if all the menbers of OTHER is included in SET."))
   ;; should we use islower instead?
   (loop
      for element in other
-     if (not (find element set :test test))
+     if (not (cl:find element set :test test))
      do (return nil)
      finally (return t)))
 
@@ -55,3 +55,23 @@ return another set with the elements in either SET or OTHER but not in both."))
                                  (test #'eql))
   (append (difference set other :test test)
           (difference other other :test test)))
+
+(defgeneric isdisjoint (set other &key test)
+  (:documentation
+   "this is an implementation of set.isdisjoint.
+
+return T if SET and OTHER does have any common elements."))
+
+(defmethod isdisjoint ((set list) (other list) &key (test #'eql))
+  (loop
+     for element in set
+     if (cl:find element other :test test)
+     do (return nil)
+     finally (return t)))
+
+(defgeneric copy (set)
+  (:documentation
+   "this is an implementation of set.copy.
+
+return a copy of SET."))
+
