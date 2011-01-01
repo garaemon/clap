@@ -77,3 +77,18 @@ return a copy of SET."))
 
 (defmethod copy ((set list))
   (copy-list set))
+
+;; the methods for frozenset
+(defgeneric update (set other &key test)
+  (:documentation
+   "this is an implementation of fronzenset.update.
+
+adding the all elements of OTHER into SET.
+this return SET and performs as a destructive function."))
+
+(defmethod update ((set list) (other list) &key (test #'eql))
+  (loop
+     for element in other
+     if (not (cl:find element set :test test))
+     do (setf set (nconc set (list element))))
+  set)
