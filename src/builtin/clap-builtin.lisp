@@ -1,7 +1,7 @@
 
 (defpackage :clap-builtin
   (:use #:common-lisp)
-  (:shadow #:find #:count #:set #:union)
+  (:shadow #:find #:count #:set #:union #:intersection)
   (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
