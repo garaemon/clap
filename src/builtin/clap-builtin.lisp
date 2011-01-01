@@ -73,8 +73,9 @@
            #:symmetric-difference
            #:isdisjoint
            #:copy
-           #:update
-           #:pop
+           ;;#:update
+           ;;#:difference-update
+           ;;#:pop
            ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
            ;; condition.lisp
