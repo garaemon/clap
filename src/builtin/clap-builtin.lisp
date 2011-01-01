@@ -1,7 +1,10 @@
 
 (defpackage :clap-builtin
   (:use #:common-lisp)
-  (:shadow #:find #:count #:set #:union #:intersection)
+  ;;(:shadow #:find #:count #:set #:union #:intersection)
+  (:shadow #:find #:count #:set)
+;;  (:import-from :common-lisp
+;;                #:union #:intersection)
   (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
@@ -68,8 +71,9 @@
            #:make-set
            #:issubset
            #:isupperset
-           #:union
-           #:intersection
+           #:union #:intersection       ;cl:union, cl:intersection
+           #:difference                 ;cl:set-difference
+           #:symmetric-difference
            #:define-class-method #:define-class-method-wrapper
            #:not-implemented-yet
            #:class-method-not-supported

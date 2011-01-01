@@ -1,6 +1,8 @@
 #|
 in CLAP, we does not make the special classes for set and flozenset of Python,
 we just use list as a class of set.
+union and intersection are implemented in cl package, so we just export
+it from clap-builtin.
 |#
 
 (in-package :clap-builtin)
@@ -41,21 +43,16 @@ return T if all the menbers of OTHER is included in SET."))
      do (return nil)
      finally (return t)))
 
-(defgeneric union (set other &key test)
+(setf (symbol-function 'difference) #'set-difference)
+
+(defgeneric symmetric-difference (set other &key test)
   (:documentation
-   "this is an implementation of set.union.
+   "this is an implementation of set.symmetric_difference.
 
-return another set including all the members of SET and OTHER."))
+"
+   ))
 
-(defmethod union ((set list) (other list) &key (test #'eql))
-  (cl:union set other :test test))
-
-(defgeneric intersection (set other &key test)
-  (:documentation
-   "this is an implementation of set.intersection.
-
-return another set with the common elements to SET and OTHER"))
-
-(defmethod intersection ((set list) (other list) &key (test #'eql))
-  (cl:intersection set other :test test))
-
+(defmethod symmetric-difference ((set list) (other list) &key
+                                 (test #'eql))
+  (append (difference set other :test test)
+          (difference other other :test test)))
