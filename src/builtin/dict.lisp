@@ -70,10 +70,7 @@ set the item of DICT with the key KEY to VAL."))
 
 (defgeneric setdefault (dict key &key default test)
   (:documentation
-   "this is an implementation of dict.setdefault.
-
-if DICT does not have KEY in its keys, DICT will be updated
-to have the key KEY with the value DEFAULT."))
+   "this is an implementation of dict.setdefault."))
 
 (defmethod setdefault ((dict list) key &key default (test #'eql))
   (if (has-key dict key :test test)
