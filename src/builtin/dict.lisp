@@ -47,5 +47,39 @@ return a list with the values of DICT."))
 (defmethod values ((dict list))
   (mapcar #'cdr dict))
 
-;; setdefault
+(defgeneric lookup (dict key &key test)
+  (:documentation
+   "this is an implementation of dict[key].
+
+return the item of DICT with the key KEY."))
+
+(defmethod lookup ((dict list) key &key (test #'eql))
+  (cdr (assoc key dict :test test)))
+
+(defgeneric (setf lookup) (val dict key &key test)
+  (:documentation
+   "this is an implementation of dict[key] = val.
+
+set the item of DICT with the key KEY to VAL."))
+
+(defmethod (setf lookup) (val (dict list) key &key (test #'eql))
+  (if (has-key dict key :test test)
+      (setf (cdr (assoc key dict :test test)) val)
+      (setf dict (nconc dict (list (cons key val)))))
+  val)
+
+(defgeneric setdefault (dict key &key default test)
+  (:documentation
+   "this is an implementation of dict.setdefault.
+
+if DICT does not have KEY in its keys, DICT will be updated
+to have the key KEY with the value DEFAULT."))
+
+(defmethod setdefault ((dict list) key &key default (test #'eql))
+  (if (has-key dict key :test test)
+      (lookup dict key :test test)
+      (progn
+        (setf (lookup dict key :test test) default)
+        default)))
+
 
