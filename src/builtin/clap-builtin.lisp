@@ -76,6 +76,8 @@
            ;;#:update
            ;;#:difference-update
            ;;#:pop
+           ;; dict.lisp
+           #:has-key #:keys
            ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
            ;; condition.lisp

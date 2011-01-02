@@ -1,4 +1,3 @@
-
 (defsystem clap-builtin
   :version "0.0.0"
   :license "New BSD"
@@ -16,4 +15,5 @@
              (:file "string" :depends-on ("meta" "func" "condition"))
              (:file "number" :depends-on ("meta" "func" "condition"
                                                  "string"))
-             (:file "set" :depends-on ("meta" "func" "condition"))))))
+             (:file "set" :depends-on ("meta" "func" "condition"))
+             (:file "dict" :depends-on ("meta" "func" "condition"))))))
