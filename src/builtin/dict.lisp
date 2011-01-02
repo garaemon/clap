@@ -26,11 +26,12 @@ return non-NIL value if DICT has KEY in its key."))
   (:documentation
    "this is an implementation of dict.keys.
 
-"))
+return a list with the keys of DICT."))
 
 (defmethod keys ((dict list))
   (mapcar #'car dict))
 
 ;; values
+;;(defgeneric values
 ;; setdefault
 ;; update...?

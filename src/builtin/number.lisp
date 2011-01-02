@@ -20,8 +20,8 @@ AS-INTEGER-RATIO returns a pair of integers as multiple-values.
 it consists from numerator and denominator when represent the float value
 in rational."
   (let ((r (rational number)))
-    (values (numerator r)
-            (denominator r))))
+    (cl:values (numerator r)
+               (denominator r))))
 
 (defmethod is-integer ((number float))
   "this is an implementation of float.is_integer.
@@ -194,5 +194,5 @@ floating-point value."
                         until (or (null ch) (char= ch #\p))
                         do (write-char ch exponential-ss))
                      (get-output-stream-string exponential-ss))))
-              (values plusp integer friction
-                      positive-exponentialp exponential))))))))
+              (cl:values plusp integer friction
+                         positive-exponentialp exponential))))))))

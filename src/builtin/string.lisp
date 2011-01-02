@@ -348,10 +348,10 @@ if not, PARTITION will return the string STR itself, and two empty strings."))
 (defmethod partition ((str string) separator)
   (let ((separator-index (find str separator)))
     (if (= separator-index -1)
-        (values str "" "")
+        (cl:values str "" "")
         (let ((first (subseq str 0 separator-index))
               (rest (subseq str (+ (length separator) separator-index))))
-          (values first separator rest)))))
+          (cl:values first separator rest)))))
 
 (defgeneric replace (str old new &optional count)
   (:documentation

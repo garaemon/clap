@@ -5,13 +5,13 @@
   "extract the elements of PARSE-LIST until one of SYMBOLS
 is found"
   (if (or (null parse-list) (member (car parse-list) symbols))
-      (values nil parse-list)
+      (cl:values nil parse-list)
       (multiple-value-bind
             (next-result rest)
           (extract-elements-until-symbols
            (cdr parse-list) symbols)
-        (values (cons (car parse-list) next-result)
-                rest))))
+        (cl:values (cons (car parse-list) next-result)
+                   rest))))
 
 (defun split-specialized-lambda-list (args)
   "split a specialized lambda-list into multiple values"
@@ -35,8 +35,8 @@ is found"
             (let ((aux-list (if (eq (car not-allow-other-keys) '&aux)
                                 (cdr not-allow-other-keys)
                                 not-allow-other-keys)))
-              (values var-list optional-list
-                      rest key-list aux-list))))))))
+              (cl:values var-list optional-list
+                         rest key-list aux-list))))))))
 
 (defun applicable-specialized-lambda-list (args)
   "convert a specialized lambda list to APPLY-able list.

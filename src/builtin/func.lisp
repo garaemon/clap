@@ -180,7 +180,7 @@ when deviding A by B.
   (divmod 10 3) => 3 1
   (divmod 10 2) => 5 0"
   (declare (type real a b))
-  (values (floor (/ a b)) (mod a b)))
+  (cl:values (floor (/ a b)) (mod a b)))
 
 (declaim (inline filter))
 (defun filter (func list)
