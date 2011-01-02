@@ -32,6 +32,13 @@ return a list with the keys of DICT."))
   (mapcar #'car dict))
 
 ;; values
-;;(defgeneric values
+(defgeneric values (dict)
+  (:documentation
+   "this is an implementation of dict.values.
+
+return a list with the values of DICT."))
+(defmethod values ((dict list))
+  (mapcar #'cdr dict))
+
 ;; setdefault
 ;; update...?

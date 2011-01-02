@@ -1,7 +1,7 @@
 
 (defpackage :clap-builtin
   (:use #:common-lisp)
-  (:shadow #:find #:count #:set #:replace)
+  (:shadow #:find #:count #:set #:replace #:values)
   (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
@@ -77,7 +77,7 @@
            ;;#:difference-update
            ;;#:pop
            ;; dict.lisp
-           #:has-key #:keys
+           #:has-key #:keys #:values
            ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
            ;; condition.lisp
