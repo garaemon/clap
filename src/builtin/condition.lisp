@@ -22,3 +22,8 @@ with unsupported built-in class."))
   ()
   (:documentation
    "this is a condition to represent ValueError in Python"))
+
+(define-condition key-error (simple-error)
+  ()
+  (:documentation
+   "this is a condition to represent KeyError in Python"))
