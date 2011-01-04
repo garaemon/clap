@@ -275,7 +275,7 @@ specified, RAW-INPUT prints it to standard output before reading a line."
   (declare (type (or null string) prompt))
   (if prompt
       (format t prompt))
-  (read-line))
+  (cl:read-line))
 
 (declaim (inline reversed))
 (defun reversed (lst)

@@ -117,7 +117,7 @@ method to coerce the number into specified precision.
           (loop
              for ch across friction
              for i from 1
-             do (let ((int-val (parse-integer
+             do (let ((int-val (parse-integer 
                                 (make-string 1 :initial-element ch)
                                 :radix 16)))
                   (setf friction-value (+ friction-value
@@ -154,12 +154,11 @@ return a number in double-float.
 DECODE-HEX-FLOAT-CODE returns strings and booleans to represent a
 floating-point value."
   (let ((counter 0))         ;it will be icremented in many loop below
-    (labels ((reading-char ()
-               (if (>= counter (length str))
-                   nil
-                   (let ((ch (elt str counter)))
-                     (incf counter)
-                     ch)))
+    (labels ((reading-char () (if (>= counter (length str))
+                                  nil
+                                  (let ((ch (elt str counter)))
+                                    (incf counter)
+                                    ch)))
              (unreading-char () (decf counter))
              (read-until (finish-chars)
                (let ((output (make-string-output-stream)))
@@ -173,7 +172,7 @@ floating-point value."
                                     ((char= ch #\-) nil)
                                     ((char= ch #\+) t)
                                     (t (unreading-char) t)))))
-    ;; read first character, it may be #\-
+      ;; read first character, it may be #\-
       (let ((plusp (read-plusp)))
         ;; read two characters and ensure to skip 0x prefix
         (let* ((ch1 (reading-char)) (ch2 (reading-char)))
