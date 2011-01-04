@@ -179,3 +179,20 @@ values of OTHER."))
      using (hash-value value)
      do (setf (lookup dict key) value))
   dict)
+
+(defgeneric delete (dict key)
+  (:documentation
+   "this is an implementation of del dict[key].
+
+remove the key KEY from DICT. if DICT does not have KEY,
+key-error is reported."))
+
+(defmethod delete ((dict hash-table) key)
+  (if (has-key dict key)
+      (progn 
+        (remhash key dict)
+        dict)
+      (error 'key-error
+             :format-control "~A does not have ~A"
+             :format-arguments `(,dict ,key))))
+
