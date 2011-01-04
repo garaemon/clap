@@ -167,28 +167,22 @@ floating-point value."
                       until (or (null ch)
                                 (cl:find ch finish-chars :test #'char=))
                       do (write-char ch output))
-                 (get-output-stream-string output))))
+                 (get-output-stream-string output)))
+             (read-plusp () (let ((ch (reading-char)))
+                              (cond ((null ch) t)
+                                    ((char= ch #\-) nil)
+                                    ((char= ch #\+) t)
+                                    (t (unreading-char) t)))))
     ;; read first character, it may be #\-
-      (let ((plusp (let ((ch (reading-char)))
-                     (cond ((char= ch #\-) nil)
-                           ((char= ch #\+) t)
-                           (t
-                            (unreading-char)
-                            t)))))
-      ;; read two characters and ensure to skip 0x prefix
-      (let* ((ch1 (reading-char)) (ch2 (reading-char)))
-        (unless (and (and ch1 (char= ch1 #\0))
-                     (and ch2 (char= ch2 #\x)))
-          (unreading-char)
-          (unreading-char)))
-      (let* ((integer (read-until '(#\. #\p))) ;read until #\.
-             (friction (read-until '(#\p)))) ;read until #\p
-        (let ((positive-exponentialp
-               (let ((ch (reading-char)))
-                 (cond ((null ch) t)
-                       ((char= ch #\-) nil)
-                       ((char= ch #\+) t)
-                       (t (unreading-char) t)))))
-          (let ((exponential (read-until '()))) ;read until EOF
-            (cl:values plusp integer friction
-                       positive-exponentialp exponential))))))))
+      (let ((plusp (read-plusp)))
+        ;; read two characters and ensure to skip 0x prefix
+        (let* ((ch1 (reading-char)) (ch2 (reading-char)))
+          (unless (and (and ch1 (char= ch1 #\0)) (and ch2 (char= ch2 #\x)))
+            (unreading-char)
+            (unreading-char)))
+        (let* ((integer (read-until '(#\. #\p))) ;read until #\.
+               (friction (read-until '(#\p)))) ;read until #\p
+          (let ((positive-exponentialp (read-plusp)))
+            (let ((exponential (read-until '()))) ;read until EOF
+              (cl:values plusp integer friction
+                         positive-exponentialp exponential))))))))
