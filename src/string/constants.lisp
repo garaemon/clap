@@ -7,7 +7,7 @@
   "abcdefghijklmnopqrstuvwxyz"
   "a string composed of the ASCII lowercase characters.")
 
-(defconstant* +ascii-uppercase+
+(defconstant* +asciix-uppercase+
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   "a string composed of the ASCII uppercase characters.")
 
@@ -68,4 +68,3 @@ is not considered.")
                  +whitespace+)
   "a string composed of the printable characters. currently locale
 is not considered.")
-

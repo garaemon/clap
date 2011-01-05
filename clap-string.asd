@@ -5,6 +5,6 @@
   :components ((:module "src/string"
                 :components ((:file "clap-string")
                              (:file "constants" :depends-on ("clap-string"))
-                             (:file "impl"
+                             (:file "func"
                                     :depends-on ("clap-string" "constants"))
                              ))))
