@@ -5,17 +5,6 @@ we just use hash table as a class of dictionary.
 
 (in-package :clap-builtin)
 
-(defun dict (alist &key (test #'eql))
-  "this is an implementation of dict().
-
-DICT converts an associated list into a hash-table. in CLAP,
-we use hash-table as a class of dictionary of python."
-  (let ((ret (make-hash-table :test test)))
-    (loop
-         for (key . value) in alist
-         do (setf (gethash key ret) value))
-    ret))
-
 ;; fromkeys classmethod
 (define-class-method-wrapper fromkeys ((dict hash-table) keys
                                        &key initial-value test)
