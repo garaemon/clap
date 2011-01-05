@@ -17,7 +17,7 @@
 'Foo Bar Baz'
 ||#
 
-(defun capwords (s &optional (sep " "))
+(defun capwords (s &optional (sep nil))
   "this is an implementation of string.capwords.
 
 capitalize the string S using the methods defined in clap-builtin.
