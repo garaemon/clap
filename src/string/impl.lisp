@@ -50,7 +50,8 @@ for clap-builtin:translate.
       => \"fugafuga\""
   (if (not (= (length from) (length to)))
       (error 'clap-builtin:value-error
-             :format-control "the arguments of MAKETRANS must have the same length")
+             :format-control "the arguments of MAKETRANS must ~
+have the same length")
       (let ((ret (make-hash-table)))
         (loop
            for ch1 across from
