@@ -196,3 +196,8 @@ key-error is reported."))
              :format-control "~A does not have ~A"
              :format-arguments `(,dict ,key))))
 
+(defmethod len ((x hash-table))
+  "this is an implementation of len(dict) function of Python on CommonLisp.
+
+LEN returns the length of X."
+  (hash-table-count x))

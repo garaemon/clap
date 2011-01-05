@@ -244,8 +244,13 @@ ISSUBCLASS returns T if SUB is a subclass of SUPER.
   (clap-builtin:issubclass  'single-float 'number) => T"
   (closer-mop:subclassp sub super))
 
-(declaim (inline len))
-(defun len (x)
+(defgeneric len (x)
+  (:documentation
+   "this is an implementation of len function of Python on CommonLisp.
+
+LEN returns the length of X."))
+
+(defmethod len ((x sequence))
   "this is an implementation of len function of Python on CommonLisp.
 
 LEN returns the length of X.
