@@ -108,3 +108,12 @@ read upto SIZEHINT bytes."))
          until (string= line "")
          collect line)))
 
+(defgeneric tell (file)
+  (:documentation
+   "this is an implementation of file.tell.
+
+return the current position of FILE"))
+
+(defmethod tell ((file stream))
+  (file-position file))
+
