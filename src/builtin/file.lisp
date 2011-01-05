@@ -108,6 +108,22 @@ read upto SIZEHINT bytes."))
          until (string= line "")
          collect line)))
 
+(defgeneric seek (file offset &optional whence)
+  (:documentation
+   "this is an implementation of file.seek.
+
+set the current FILE position to OFFSET.
+WHENCE must be a one of :seek-cur, :seek-end or :seek-set and defaults to
+:seek-set."))
+
+(defmethod seek ((file stream) offset &optional (whence :seek-cur))
+  (let ((position (case whence
+                    (:seek-cur (+ (file-position file) offset))
+                    (:seek-set offset)
+                    (:seek-end (- (file-length file) offset)))))
+    (file-position file position)
+    file))
+
 (defgeneric tell (file)
   (:documentation
    "this is an implementation of file.tell.

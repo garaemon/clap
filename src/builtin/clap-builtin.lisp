@@ -93,6 +93,7 @@
            #:read
            #:readline
            #:readlines
+           #:seek
            #:tell
            ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
