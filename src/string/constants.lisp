@@ -7,7 +7,7 @@
   "abcdefghijklmnopqrstuvwxyz"
   "a string composed of the ASCII lowercase characters.")
 
-(defconstant* +asciix-uppercase+
+(defconstant* +ascii-uppercase+
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   "a string composed of the ASCII uppercase characters.")
 
