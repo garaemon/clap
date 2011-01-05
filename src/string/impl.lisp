@@ -43,30 +43,22 @@
 ;; string.maketrans(from, to)
 ;; =============================================================================
 
-(defgeneric maketrans (obj from to))
+(defun maketrans (from to)
+  "this is an implementation of string.maketrans.
 
-(defmethod maketrans ((string string) (from string) (to string))
-  (let ((ans (make-string (length string))))
-    (loop :for c :across string
-          :for ans-pos :from 0
-          :do (let ((pos (position c from)))
-                (setf (schar ans ans-pos)
-                      (if pos (char to pos) c)))
-          :finally (return ans))))
+FROM and TO are strings and MAKETRANS returns a hash-table
+for clap-builtin:translate.
 
-#|(maketrans "foo bar baあz"
-           +ascii-lowercase+
-           +ascii-uppercase+)
-;=> "FOO BAR BAあZ"
+ example:
 
-|#
-
-(defmethod maketrans ((symbol symbol) (from string) (to string))
-  (values (intern (maketrans (symbol-name symbol) from to))))
-
-#| (maketrans 'foo-bar-baz
-           +ascii-uppercase+
-           +ascii-lowercase+)
-;=> |foo-bar-baz|
-
-|#
+    (clap-builtin:translate \"hogehoge\" (maketrans \"hoge\" \"fuga\"))
+      => \"fugafuga\""
+  (if (not (= (length from) (length to)))
+      (error 'clap-builtin:value-error
+             :format-control "the arguments of MAKETRANS must have the same length")
+      (let ((ret (make-hash-table)))
+        (loop
+           for ch1 across from
+           for ch2 across to
+           do (setf (gethash ch1 ret) ch2))
+        ret)))

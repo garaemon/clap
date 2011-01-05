@@ -632,7 +632,7 @@ return a titlecased copy of the string STR."))
    "this is an implementation of str.translate.
 
 return a copy of the string STR replacing the strings according
-to the hash table TABLE.
+to the hash table TABLE. the key and value of TABLE must be characters.
 if DELETECHARS is specified, the characters of DELETECHARS appered in STR
 are removed"))
 
@@ -649,9 +649,10 @@ are removed"))
               (loop
                  for replace-key being the hash-keys in table
                  using (hash-value replace-value)
-                 if (startswith str replace-key :start i)
-                 do (progn (format output replace-value) ;copy replace-value
-                           (incf i (length replace-key)) ;skip i
+                 ;;if (startswith str replace-key :start i)
+                 if (char= ch replace-key)
+                 do (progn (write-char replace-value output)
+                           (incf i)
                            (return))
                  finally (progn
                            (incf i)     ;copy ch and increment i
