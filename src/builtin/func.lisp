@@ -1,5 +1,17 @@
 (in-package #:clap-builtin)
 
+(defun dict (&optional (alist nil) &key (test #'eql))
+  "this is an implementation of dict().
+
+DICT converts an associated list into a hash-table. in CLAP,
+we use hash-table as a class of dictionary of python."
+  (let ((ret (make-hash-table :test test)))
+    (loop
+         for (key . value) in alist
+         do (setf (gethash key ret) value))
+    ret))
+
+
 (defun range (start &optional (stop nil) (step 1))
   "this is an implementation of range function of Python on CommonLisp.
 
