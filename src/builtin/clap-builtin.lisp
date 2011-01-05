@@ -77,6 +77,7 @@
            #:isdisjoint
            #:copy
            ;; dict.lisp
+           #:dict
            #:has-key
            #:keys
            #:values
