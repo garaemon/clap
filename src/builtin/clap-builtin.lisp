@@ -2,7 +2,7 @@
 (defpackage :clap-builtin
   (:use #:common-lisp)
   (:shadow #:find #:count #:set #:replace #:values #:pop #:get
-           #:delete #:read #:write)
+           #:read #:write)
   (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
@@ -68,7 +68,7 @@
            #:upper
            #:zfill
            ;; set.lisp
-           #:make-set
+           #:set
            #:issubset
            #:isupperset
            #:union #:intersection       ;cl:union, cl:intersection
@@ -88,7 +88,7 @@
            #:items
            #:popitem
            #:update
-           #:delete
+           #:del
            ;; file.lisp
            #:flush
            #:fileno

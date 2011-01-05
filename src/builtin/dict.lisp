@@ -150,7 +150,6 @@ specified. if DEFAULT is not specified, report a value-error."))
                 :format-control "~A does not have ~A"
                 :format-arguments `(,dict ,key)))))
 
-
 (defgeneric popitem (dict)
   (:documentation
    "this is an implementation of dict.popitem.
@@ -180,14 +179,14 @@ values of OTHER."))
      do (setf (lookup dict key) value))
   dict)
 
-(defgeneric delete (dict key)
+(defgeneric del (dict key)
   (:documentation
    "this is an implementation of del dict[key].
 
 remove the key KEY from DICT. if DICT does not have KEY,
 key-error is reported."))
 
-(defmethod delete ((dict hash-table) key)
+(defmethod del ((dict hash-table) key)
   (if (has-key dict key)
       (progn 
         (remhash key dict)
