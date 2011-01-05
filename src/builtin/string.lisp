@@ -10,6 +10,7 @@
   "a list of whitespace characters")
 
 (defun whitespacep (ch)
+  "return T is ch is a whitespace character"
   (cl:find ch +whitespace-characters+ :test #'char=))
 
 (defgeneric capitalize (str)
