@@ -31,6 +31,8 @@
            #:sum
            #:zip
            ;; string.lisp
+           #:+whitespace-characters+
+           #:whitespacep
            #:capitalize
            #:center
            #:count
