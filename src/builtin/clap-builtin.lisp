@@ -2,7 +2,7 @@
 (defpackage :clap-builtin
   (:use #:common-lisp)
   (:shadow #:find #:count #:set #:replace #:values #:pop #:get
-           #:delete #:read)
+           #:delete #:read #:write)
   (:documentation "this package is an implementation of __builtin__ package")
   (:export #:range
            #:all
@@ -95,6 +95,8 @@
            #:readlines
            #:seek
            #:tell
+           #:write
+           #:writelines
            ;; meta.lisp
            #:define-class-method #:define-class-method-wrapper
            ;; condition.lisp

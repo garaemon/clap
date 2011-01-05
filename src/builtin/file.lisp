@@ -133,3 +133,22 @@ return the current position of FILE"))
 (defmethod tell ((file stream))
   (file-position file))
 
+(defgeneric write (file str)
+  (:documentation
+   "this is an implementation of file.write.
+
+write a string STR to FILE."))
+
+(defmethod write ((file stream) str)
+  (write-string str file))
+
+(defgeneric writelines (file sequence)
+  (:documentation
+   "this is an implementation of file.writelines.
+
+write a list of strings SEQUENCE to FILE"))
+
+(defmethod writelines ((file stream) sequence)
+  (dolist (line sequence)
+    (write file line))
+  file)
