@@ -67,4 +67,3 @@ return a copy of SET."))
 
 (defmethod copy ((set list))
   (copy-list set))
-

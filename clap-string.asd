@@ -7,4 +7,6 @@
                              (:file "constants" :depends-on ("clap-string"))
                              (:file "func"
                                     :depends-on ("clap-string" "constants"))
+                             (:file "template"
+                                    :depends-on ("clap-string"))
                              ))))

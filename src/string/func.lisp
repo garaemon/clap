@@ -29,8 +29,7 @@ secondly, capitalize the each separated string using clap-builtin:capitalize.
 
 thirdly, joint the capitalized strings using clap-builtin:join."
   (clap-builtin:join (or sep " ")
-                     (remove-if #'(lambda (x)
-                                    (string= x ""))
+                     (remove-if #'(lambda (x) (string= x ""))
                                 (mapcar #'clap-builtin:capitalize
                                         (clap-builtin:split s sep)))))
 

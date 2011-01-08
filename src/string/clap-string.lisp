@@ -1,6 +1,7 @@
 (defpackage :clap-string
   (:use #:common-lisp)
   (:import-from #:clap-builtin #:defconstant* #:sconc)
+  (:shadow #:substitute)
   (:export #:+ascii-letters+
            #:+ascii-lowercase+
            #:+ascii-uppercase+
@@ -13,7 +14,10 @@
            #:+punctuation+
            #:+uppercase+
            #:+whitespace+
-           #:capwords #:maketrans)
+           #:capwords #:maketrans
+           #:template #:substitute #:safe-substitute
+           #:make-template
+           #:delimiter #:idpattern)
   (:documentation "this is an implementation of string module."))
 
 
