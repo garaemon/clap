@@ -37,4 +37,10 @@
   clap-winsound clap-posix clap-pwd clap-spwd clap-grp clap-crypt clap-termios
   clap-tty clap-pty clap-fcntl clap-pipes clap-resource clap-nis clap-syslog
   clap-ic clap-mac-os clap-macostools clap-findertools clap-easy-dialogs
-  clap-frame-work clap-auto-gil clap-color-picker))
+  clap-frame-work clap-auto-gil clap-color-picker)
+ :version "0.0.0"
+ :license "New BSD"
+ :components
+ ((:module "src" :components
+           ((:file "clap"))))
+ )
