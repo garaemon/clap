@@ -27,4 +27,5 @@
 # For details, please refer to
 # http://common-lisp.net/project/clbuild/#faq_dependency_details
 #
-clap cl-ppcre closer-mop
+clap cl-ppcre closer-mop cffi trivial-features osicat
+
