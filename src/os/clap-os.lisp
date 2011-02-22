@@ -29,7 +29,7 @@
                       :dup2
                       :fchmod
                       :fchown
-                      :fdatasync
+                      #+linux :fdatasync
                       :fstat
                       :fstatvfs
                       :fsync
