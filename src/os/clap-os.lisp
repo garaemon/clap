@@ -1,5 +1,5 @@
 (cl:defpackage :clap-os
-  (:documentation "fill this documentation")
+  (:documentation "os module implementation")
   (:import-from :osicat-posix
                 . #0=(:chdir
                       :getegid
@@ -84,7 +84,8 @@
                              :wstopsig
                              :wtermsig))
   (:export . #0#)
-  #+sbcl (:export . #1#))
+  #+sbcl (:export . #1#)
+  (:export :*environ*))
 
 #|||
 not yet implemented
