@@ -40,9 +40,9 @@ return non-NIL value if DICT has KEY in its key."))
 return a list with the keys of DICT."))
 
 (defmethod keys ((dict hash-table))
-  (maphash #'(lambda (key value)
-               key)
-           dict))
+  (loop
+     for key being the hash-key in dict
+     collect key))
 
 (defgeneric values (dict)
   (:documentation
@@ -51,9 +51,9 @@ return a list with the keys of DICT."))
 return a list with the values of DICT."))
 
 (defmethod values ((dict hash-table))
-  (maphash #'(lambda (key value)
-               value)
-           dict))
+  (loop
+     for value being the hash-value in dict
+     collect value))
 
 (defgeneric lookup (dict key)
   (:documentation
