@@ -6,7 +6,7 @@
           :accessor table-of
           :initarg :table)))
 
-;; currently, lookup and del are supported
+
 (cl:defmethod clap-builtin:lookup ((env environ-hash-table) key)
   (clap-builtin:lookup (table-of env) key))
 
@@ -20,6 +20,12 @@
 (cl:defmethod clap-builtin:del ((env environ-hash-table) key)
   (clap-builtin:del (table-of env) key)
   (unsetenv key))
+
+(cl:defmethod clap-builtin:values ((env environ-hash-table))
+  (clap-builtin:values (table-of env)))
+
+(cl:defmethod clap-builtin:keys ((env environ-hash-table))
+  (clap-builtin:keys (table-of env)))
 
 (cl:defun make-environ ()
   (cl:make-instance 'environ-hash-table))
