@@ -1,4 +1,5 @@
-
 (defpackage :clap-sys
   (:use #:common-lisp)
-  (:documentation "fill this documentation"))
+  (:documentation "clap-sys is an implementation of sys module")
+  (:export #:*argv*)
+  )
