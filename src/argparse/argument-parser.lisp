@@ -52,18 +52,29 @@ argument instances.")
    ))
 
 (defclass argument ()
-  ((name :initarg :name :initform nil)
-   (flags :initarg :flags :initform nil)
-   (action :initarg :action :initform nil)
-   (nargs :initarg :nargs :initform nil)
-   (const :initarg :const :initform nil)
-   (default :initarg :default :initform nil)
+  ((name :initarg :name :initform nil
+         :accessor name)
+   (flags :initarg :flags :initform nil
+          :accessor flags)
+   (action :initarg :action :initform nil
+           :accessor action)
+   (nargs :initarg :nargs :initform nil
+          :accessor nargs)
+   (const :initarg :const :initform nil
+          :accessor const)
+   (default :initarg :default :initform nil
+            :accessor default)
    (type :initarg :type :initform nil)
-   (choices :initarg :choices :initform nil)
-   (required :initarg :required :initform nil)
-   (help :initarg :help :initform nil)
-   (metavar :initarg :metavar :initform nil)
-   (dest :initarg :dest :initform nil)))
+   (choices :initarg :choices :initform nil
+            :accessor choices)
+   (required :initarg :required :initform nil
+             :accessor required)
+   (help :initarg :help :initform nil
+         :accessor help)
+   (metavar :initarg :metavar :initform nil
+            :accessor metavar)
+   (dest :initarg :dest :initform nil
+         :accessor dest)))
 
 (defgeneric add-argument (parser name-or-flags
                           &key
@@ -78,12 +89,18 @@ argument instances.")
                          (action nil) (nargs nil) (const nil)
                          (default nil) (type nil) (choices nil)
                          (required nil) (help nil) (metavar nil) (dest nil))
-  (push (make-argument parser name-or-flags
-                       :action action :nargs nargs :const const
-                       :default default :type type :choices choices
-                       :required required :help help :metavar metavar
-                       :dest dest)
-        (arguments parser)))
+  (let ((arg (make-argument parser name-or-flags
+                            :action action :nargs nargs :const const
+                            :default default :type type :choices choices
+                            :required required :help help :metavar metavar
+                            :dest dest)))
+    ;; check duplication
+    (let ((names-and-flags (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
+                                   (arguments parser))))
+      (dolist (name-or-flag name-or-flags)
+        (if (find name-or-flag names-and-flags :test #'string=)
+            (error "you have already use ~A option" name-or-flag))))
+    (push arg (arguments parser))))
 
 (defmethod make-argument ((parser argument-parser) name-or-flags &rest args)
   ;; error check
