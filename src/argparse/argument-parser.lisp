@@ -64,7 +64,8 @@ argument instances.")
           :accessor const)
    (default :initarg :default :initform nil
             :accessor default)
-   (type :initarg :type :initform nil)
+   (type :initarg :type :initform nil
+         :accessor type)
    (choices :initarg :choices :initform nil
             :accessor choices)
    (required :initarg :required :initform nil
