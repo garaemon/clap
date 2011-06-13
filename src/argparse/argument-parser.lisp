@@ -50,7 +50,7 @@
    (arguments :accessor arguments
               :initarg :arguments
               :initform nil
-              :documentation "only for internal use. it just stores a list of \
+              :documentation "only for internal use. it just stores a list of
 argument instances.")
    )
   (:documentation
@@ -82,6 +82,8 @@ argument instances.")
             :accessor metavar)
    (dest :initarg :dest :initform nil
          :accessor dest)
+   (version :initarg :version :initform nil
+            :accessor version)
    (value :initarg :value :initform nil
            :accessor value)))
 
@@ -101,13 +103,13 @@ argument instances.")
 (defmethod add-argument ((parser argument-parser) name-or-flags
                          &key
                          (action :store) (nargs 1) (const nil)
-                         (default nil) (type nil) (choices nil)
+                         (default nil) (type nil) (choices nil) (version nil)
                          (required nil) (help nil) (metavar nil) (dest nil))
   (let ((arg (make-argument parser name-or-flags
                             :action action :nargs nargs :const const
                             :default default :type type :choices choices
                             :required required :help help :metavar metavar
-                            :dest dest)))
+                            :dest dest :version version)))
     ;; check duplication
     (let ((names-and-flags
            (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
@@ -169,18 +171,37 @@ argument instances.")
      (if (= (nargs argument) 1)
          (setf (value argument) (car args))
          (setf (value argument) args)))
-    (:store-const
-     )
+    (:store-const                       ;TODO: const is not supported
+     (if (= (nargs argument) 1)
+         (setf (value argument) (car args))
+         (setf (value argument) args)))
     ((:store-true :store-t)
-     )
+     (setf (value argument) t))
     ((:store-false :store-nil)
-     )
+     (setf (value argument) nil))
     (:append
-     )
-    (:append-const
-     )
+     (if (null (value argument))
+         (if (= (nargs argument) 1)
+             (setf (value argument) args)
+             (setf (value argument) (list args)))
+         (if (= (nargs argument) 1)
+             (setf (value argument)
+                   (append (value argument) args))
+             (setf (value argument)
+                   (append (value argument) (list args))))))
+    (:append-const                      ;TODO: const is not supported
+     (if (null (value argument))
+         (if (= (nargs argument) 1)
+             (setf (value argument) args)
+             (setf (value argument) (list args)))
+         (if (= (nargs argument) 1)
+             (setf (value argument)
+                   (append (value argument) args))
+             (setf (value argument)
+                   (append (value argument) (list args))))))
     (:version
-     )))
+     (format t (version argument))
+     (clap-sys:exit 0))))
 
 (defgeneric process-argument (parser argument target-arg rest-args)
   (:documentation "this method will call `action-argument' and return
@@ -255,6 +276,11 @@ and the remaining arguments."))
   (setq p (make-instance 'clap-argparse:argument-parser))
   (clap-argparse:add-argument p '("-p" "-q"))
   (clap-argparse:add-argument p '("-a"))
-  (clap-argparse::parse-args p (clap-builtin:split "-q 1 -a 2"))
-  (pprint (clap-argparse::arguments p)))
+  (describe (clap-argparse::parse-args p (clap-builtin:split "-q 1 -a 2"))))
+
+(progn
+  (setq p (make-instance 'clap-argparse:argument-parser))
+  (clap-argparse:add-argument p '("--foo") :action :append)
+  (describe (clap-argparse::parse-args p (clap-builtin:split "--foo 1 --foo 2")))
+  )
 |#
