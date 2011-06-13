@@ -10,4 +10,5 @@
   #+lispworks system:*line-arguments-list*
   "implementation of sys.argv. The list of command line arguments.")
 
-
+(defun exit (code)
+  #+sbcl (sb-unix:unix-exit code))
