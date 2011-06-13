@@ -147,6 +147,14 @@ argument instances.")
       (t
        (apply #'make-instance 'argument :name (car name-or-flags) args)))))
 
+(defgeneric long-option-p (parser flag)
+  (:documentation "return T if flag is a long option"))
+
+(defmethod long-option-p ((parser argument-parser) flag)
+  (clap-builtin:startswith
+   flag
+   (concatenate 'string (prefix-chars parser) (prefix-chars parser))))
+
 (defgeneric find-match-argument (parser arg)
   (:documentation ""))
 
@@ -156,9 +164,15 @@ argument instances.")
         (if (string= (name argument) arg)
             (return-from find-match-argument argument))
         (dolist (flag (flags argument))
-          ;; TODO: support --HOGE=hoge style
-          (if (string= flag arg)
-              (return-from find-match-argument argument))))))
+          (if (and (long-option-p parser flag)
+                   (= (clap-builtin:find arg "=") 1))
+              ;; TODO: it may catch "-a=1" style
+              (multiple-value-bind (before partitioner after)
+                  (clap-builtin:partition arg "=")
+                (if (string= before flag)
+                    (return-from find-match-argument argument)))
+              (if (string= flag arg)
+                  (return-from find-match-argument argument)))))))
 
 (defgeneric action-argument (argument args)
   (:documentation "this method will process `args' according to the
