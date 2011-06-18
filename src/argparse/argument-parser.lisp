@@ -118,7 +118,6 @@ this class is useful to parse the command line options and arguments."
                             :default default :type type :choices choices
                             :required required :help help :metavar metavar
                             :dest dest :version version)))
-    (print arg)
     ;; check duplication
     (let ((names-and-flags
            (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
