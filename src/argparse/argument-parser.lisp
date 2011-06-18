@@ -9,7 +9,8 @@
 (defclass argument-parser ()
   ((description :accessor description
                 :initarg :description
-                :documentation "text to display BEFORE the help of the arguments")
+                :documentation "text to display BEFORE the help of
+the arguments")
    (epilog :accessor epilog
            :initarg :epilog
            :initform ""
@@ -17,36 +18,42 @@
    (add-help :accessor add-help
              :initarg :add-help
              :initform t
-             :documentation "add -h, --help option to the parser. defaults to T")
+             :documentation "add -h, --help option to the parser.
+defaults to T")
    (argument-default :accessor argument-default
                      :initarg :argument-default
                      :initform nil
                      :documentation
-                     "")
-   (parents :accessor parents
+                     "the default value of the arguments. defaults to nil.")
+   (parents :accessor parents           ;??
             :initarg :parents
             :initform nil
-            :documentation "")
+            :documentation "a list of argument-parser instances.")
    (prefix-chars :accessor prefix-chars
                  :initarg :prefix-chars
                  :initform "-"
-                 :documentation "")
+                 :documentation "the prefix characters of the optional
+arguments.")
    (fromfile-prefix-chars :accessor fromfile-prefix-chars
                           :initarg :fromfile-prefix-chars
                           :initform nil
-                          :documentation "")
+                          :documentation "the set of characters that
+prefix files from which additional arguments will be read.")
    (conflict-handler :accessor conflict-handler
                      :initarg :conflict-handler
                      :initform nil
-                     :documentation "")
+                     :documentation "specify a strategy for resolving
+the conflict of options")
    (prog :accessor prog
          :initarg :prog
          :initform (car clap-sys:*argv*)
-         :documentation "")
+         :documentation "the name of the program.
+default: (car clap-sys:*argv*)")
    (usage :accessor usage
           :initarg :usage
           :initform :generated
-          :documentation "")
+          :documentation "the string describing the program usage. it will be
+generated in default.")
    (arguments :accessor arguments
               :initarg :arguments
               :initform nil
@@ -54,7 +61,8 @@
 argument instances.")
    )
   (:documentation
-   "this is an implementation of argparse.ArgumentParser class."
+   "this is an implementation of argparse.ArgumentParser class.
+this class is useful to parse the command line options and arguments."
    ))
 
 (defclass argument ()
@@ -110,6 +118,7 @@ argument instances.")
                             :default default :type type :choices choices
                             :required required :help help :metavar metavar
                             :dest dest :version version)))
+    (print arg)
     ;; check duplication
     (let ((names-and-flags
            (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
@@ -128,12 +137,14 @@ argument instances.")
     (push arg (arguments parser))))
 
 (defgeneric make-argument (parser name-or-flags &rest args)
-  (:documentation ""))
+  (:documentation "create an instance of argument class."))
 
 (defmethod make-argument ((parser argument-parser) name-or-flags &rest args)
   ;; error check
   (let ((prefix (prefix-chars parser)))
     (cond
+      ((not (listp name-or-flags))
+       (apply #'make-argument parser (list name-or-flags) args))
       ((> (length name-or-flags) 1)
        ;; all the flags should start with prefix
        (if (clap-builtin:all (mapcar #'(lambda (x)
@@ -166,7 +177,6 @@ argument instances.")
         (dolist (flag (flags argument))
           (if (and (long-option-p parser flag)
                    (= (clap-builtin:find arg "=") 1))
-              ;; TODO: it may catch "-a=1" style
               (multiple-value-bind (before partitioner after)
                   (clap-builtin:partition arg "=")
                 (if (string= before flag)
