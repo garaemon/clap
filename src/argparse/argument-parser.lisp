@@ -122,7 +122,9 @@ this class is useful to parse the command line options and arguments."
     (let ((names-and-flags
            (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
                    (arguments parser))))
-      (dolist (name-or-flag name-or-flags)
+      (dolist (name-or-flag (if (listp name-or-flags)
+                                name-or-flags
+                                (list name-or-flags)))
         (if (find name-or-flag names-and-flags :test #'string=)
             (error "you have already use ~A option" name-or-flag))))
     ;; dest estimation
