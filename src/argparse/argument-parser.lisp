@@ -196,41 +196,38 @@ arguments. (default: to nil)")
 :store-true, :store-false, :append, :append-const, :version and lambda form."))
 
 (defmethod action-argument ((argument argument) args)
-  (case (action argument)
-    (:store
-     (if (= (nargs argument) 1)
-         (setf (value argument) (car args))
-         (setf (value argument) args)))
-    (:store-const                       ;TODO: const is not supported
-     ;; TODO: what happen if narg=2 and "store_const" are used in Python 2.7?
-     (setf (value argument) (const argument)))
-    ((:store-true :store-t)
-     (setf (value argument) t))
-    ((:store-false :store-nil)
-     (setf (value argument) nil))
-    (:append
-     (if (null (value argument))
-         (if (= (nargs argument) 1)
-             (setf (value argument) args)
-             (setf (value argument) (list args)))
-         (if (= (nargs argument) 1)
-             (setf (value argument)
-                   (append (value argument) args))
-             (setf (value argument)
-                   (append (value argument) (list args))))))
-    (:append-const                      ;TODO: const is not supported
-     (if (null (value argument))
-         (if (= (nargs argument) 1)
-             (setf (value argument) args)
-             (setf (value argument) (list args)))
-         (if (= (nargs argument) 1)
-             (setf (value argument)
-                   (append (value argument) args))
-             (setf (value argument)
-                   (append (value argument) (list args))))))
-    (:version
-     (format t (version argument))
-     (clap-sys:exit 0))))
+  (with-slots (action nargs value const version) argument
+    (case action
+      (:store
+       (if (= nargs 1)
+           (setf value (car args))
+           (setf value args)))
+      (:store-const                       ;TODO: const is not supported
+       ;; TODO: what happen if narg=2 and "store_const" are used in Python 2.7?
+       (setf value const))
+      ((:store-true :store-t)
+       (setf value t))
+      ((:store-false :store-nil)
+       (setf value nil))
+      (:append
+       (if (null value)
+           (if (= nargs 1)
+               (setf value args)
+               (setf value (list args)))
+           (if (= nargs 1)
+               (setf value (append value args))
+               (setf value (append value (list args))))))
+      (:append-const                      ;TODO: const is not supported
+       (if (null value)
+           (if (= nargs 1)
+               (setf value args)
+               (setf value (list args)))
+           (if (= nargs 1)
+               (setf value (append value args))
+               (setf value (append value (list args))))))
+      (:version
+       (format t version)
+       (clap-sys:exit 0)))))
 
 (defgeneric process-argument (parser argument target-arg rest-args)
   (:documentation "this method will call `action-argument' and return
