@@ -62,14 +62,17 @@ argument instances.")
    )
   (:documentation
    "this is an implementation of argparse.ArgumentParser class.
-this class is useful to parse the command line options and arguments."
-   ))
+this class is useful to parse the command line options and arguments."))
 
 (defclass argument ()
   ((name :initarg :name :initform nil
-         :accessor name)
+         :accessor name
+         :documentation "a string to represent positional arguments.
+this slow will be specified only if the instance used to parse positional
+arguments. (default: to nil)")
    (flags :initarg :flags :initform nil
-          :accessor flags)
+          :accessor flags
+          :documentation "a list of optional arguments.")
    (action :initarg :action :initform nil
            :accessor action)
    (nargs :initarg :nargs :initform 1
@@ -93,7 +96,9 @@ this class is useful to parse the command line options and arguments."
    (version :initarg :version :initform nil
             :accessor version)
    (value :initarg :value :initform nil
-           :accessor value)))
+           :accessor value))
+  (:documentation
+   "this is a class to represent an argument or an optional."))
 
 (defmethod print-object ((object argument) stream)
   (print-unreadable-object (object stream :type t)
@@ -197,9 +202,8 @@ this class is useful to parse the command line options and arguments."
          (setf (value argument) (car args))
          (setf (value argument) args)))
     (:store-const                       ;TODO: const is not supported
-     (if (= (nargs argument) 1)
-         (setf (value argument) (car args))
-         (setf (value argument) args)))
+     ;; TODO: what happen if narg=2 and "store_const" are used in Python 2.7?
+     (setf (value argument) (const argument)))
     ((:store-true :store-t)
      (setf (value argument) t))
     ((:store-false :store-nil)
@@ -294,7 +298,7 @@ and the remaining arguments."))
 
 (defmethod parse-args ((parser argument-parser) args &key (namespace nil))
   (parse-args-rec parser args :namespace namespace :nonmatched-args nil))
-  
+
 #|
 (progn
   (require :clap-argparse)
