@@ -101,12 +101,7 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
    (dest :initarg :dest :initform nil
          :accessor dest)
    (version :initarg :version :initform nil
-            :accessor version)
-;;    (value :initarg :value :initform nil
-;;           :accessor value
-;;           :documentation "the value of `argument'. `namespace' instance will
-;; be created according to this value."))  ;TODO: remove value slot
-   )
+            :accessor version))
   (:documentation
    "this is a class to represent an argument or an optional."))
 
@@ -114,11 +109,6 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
   (print-unreadable-object (object stream :type t)
     (format stream "~A [~s]" (action object)
             (or (name object) (flags object)))))
-
-;; (defmethod initialize-instance :after ((object argument) &rest initargs)
-;;   ;; `value' defaults to `default'
-;;   (setf (value object) (default object))
-;;   object)
 
 (defgeneric add-argument (parser name-or-flags
                           &key
