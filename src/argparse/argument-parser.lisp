@@ -102,22 +102,23 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
          :accessor dest)
    (version :initarg :version :initform nil
             :accessor version)
-   (value :initarg :value :initform nil
-          :accessor value
-          :documentation "the value of `argument'. `namespace' instance will
-be created according to this value."))
+;;    (value :initarg :value :initform nil
+;;           :accessor value
+;;           :documentation "the value of `argument'. `namespace' instance will
+;; be created according to this value."))  ;TODO: remove value slot
+   )
   (:documentation
    "this is a class to represent an argument or an optional."))
 
 (defmethod print-object ((object argument) stream)
   (print-unreadable-object (object stream :type t)
-    (format stream "~A [~s] [~s]" (action object)
-            (or (name object) (flags object)) (value object))))
+    (format stream "~A [~s]" (action object)
+            (or (name object) (flags object)))))
 
-(defmethod initialize-instance :after ((object argument) &rest initargs)
-  ;; `value' defaults to `default'
-  (setf (value object) (default object))
-  object)
+;; (defmethod initialize-instance :after ((object argument) &rest initargs)
+;;   ;; `value' defaults to `default'
+;;   (setf (value object) (default object))
+;;   object)
 
 (defgeneric add-argument (parser name-or-flags
                           &key
@@ -203,44 +204,46 @@ be created according to this value."))
               (if (string= flag arg)
                   (return-from find-match-argument argument)))))))
 
-(defgeneric action-argument (argument args)
+(defgeneric action-argument (argument args parse-result)
   (:documentation "this method will process `args' according to the
 `action' of `argument'. the supported `action' are :store, :store-const,
 :store-true, :store-false, :append, :append-const, :version and lambda form."))
 
-(defmethod action-argument ((argument argument) args)
-  (with-slots (action nargs value const version) argument
-    (case action
-      (:store
-       (if (= nargs 1)
-           (setf value (car args))
-           (setf value args)))
-      (:store-const                       ;TODO: const is not supported
-       ;; TODO: what happen if narg=2 and "store_const" are used in Python 2.7?
-       (setf value const))
-      ((:store-true :store-t)
-       (setf value t))
-      ((:store-false :store-nil)
-       (setf value nil))
-      (:append
-       (if (null value)
-           (if (= nargs 1)
-               (setf value args)
-               (setf value (list args)))
-           (if (= nargs 1)
-               (setf value (append value args))
-               (setf value (append value (list args))))))
-      (:append-const                      ;TODO: const is not supported
-       (error "not implemented yet"))
-      (:version
-       (format t version)
-       (clap-sys:exit 0)))))
+(defmethod action-argument ((argument argument) args parse-result)
+  (with-slots (action nargs const version) argument
+    (symbol-macrolet ((value (clap-builtin:lookup parse-result argument)))
+      (case action
+        (:store
+         (if (= nargs 1)
+             (setf value (car args))
+             (setf value args)))
+        (:store-const                       ;TODO: const is not supported
+         ;; TODO: what happen if narg=2 and "store_const" are used in Python 2.7?
+         (setf value const))
+        ((:store-true :store-t)
+         (setf value t))
+        ((:store-false :store-nil)
+         (setf value nil))
+        (:append
+         (if (null value)
+             (if (= nargs 1)
+                 (setf value args)
+                 (setf value (list args)))
+             (if (= nargs 1)
+                 (setf value (append value args))
+                 (setf value (append value (list args))))))
+        (:append-const                      ;TODO: const is not supported
+         (error "not implemented yet"))
+        (:version
+         (format t version)
+         (clap-sys:exit 0))))))
 
-(defgeneric process-argument (parser argument target-arg rest-args)
+(defgeneric process-argument (parser argument parse-result target-arg rest-args)
   (:documentation "this method will call `action-argument' and return
 the arguments which should be processed afterwards."))
 
 (defmethod process-argument ((parser argument-parser) (argument argument)
+                             parse-result
                              target-arg rest-args)
   ;; TODO: 'name' argument is not supported yet
   (with-slots (flags nargs) argument
@@ -248,7 +251,7 @@ the arguments which should be processed afterwards."))
     (cond
       ((numberp nargs)
        (let ((next-rest-args (subseq rest-args nargs)))
-         (action-argument argument (subseq rest-args 0 nargs))
+         (action-argument argument (subseq rest-args 0 nargs) parse-result)
          next-rest-args))
       ((string= nargs "?")
        (error "not implemented yet"))
@@ -261,7 +264,8 @@ the arguments which should be processed afterwards."))
                            until (clap-builtin:startswith arg prefix)
                            finally (return i))))
            (let ((next-rest-args (subseq rest-args arg-num)))
-             (action-argument argument (subseq rest-args 0 arg-num))
+             (action-argument argument (subseq rest-args 0 arg-num)
+                              parse-result)
              next-rest-args))))
       ((string= nargs "+")
        (with-slots (prefix) parser
@@ -273,16 +277,17 @@ the arguments which should be processed afterwards."))
            (if (= arg-num 0)
                (error 'too-few-arguments :prog (prog parser)))
            (let ((next-rest-args (subseq rest-args arg-num)))
-             (action-argument argument (subseq rest-args 0 arg-num))
+             (action-argument argument (subseq rest-args 0 arg-num)
+                              parse-result)
              next-rest-args))))
        )))
 
-(defgeneric make-class-from-options (parser)
+(defgeneric make-class-from-options (parse-result)
   (:documentation "return a class, that is an instance of standard-class.
 ths slots and thir values are defined by the `arguments' of parser."))
 
-(defmethod make-class-from-options ((parser argument-parser))
-  (let ((dests (mapcar #'dest (arguments parser))))
+(defmethod make-class-from-options ((parse-result hash-table))
+  (let ((dests (mapcar #'car (clap-builtin:items parse-result))))
     (let ((anon-class
            (make-instance 'standard-class
                           :direct-slots
@@ -290,38 +295,42 @@ ths slots and thir values are defined by the `arguments' of parser."))
                                   dests))))
       (make-instance anon-class))))
 
-(defgeneric parsed-options (parser)
+(defgeneric parsed-options (parse-result)
   (:documentation "inner function of parse-args. this function will return
 multiple values of a anonymous class instance to represent options and the list
 of remained arguments."))
 
-(defmethod parsed-options ((parser argument-parser))
-  (let ((class (make-class-from-options parser)))
-    (dolist (arg (arguments parser))
-      (setf (slot-value class (dest arg)) (value arg)))
+;; implementingx
+(defmethod parsed-options ((parse-result hash-table))
+  (let ((class (make-class-from-options parse-result)))
+    (dolist (arg (clap-builtin:items parse-result))
+      (setf (slot-value class (car arg)) (cdr arg)))
     class))
 
-(defgeneric parse-args-rec (parser args &key namespace nonmatched-args)
+(defgeneric parse-args-rec (parser args parse-result
+                            &key namespace nonmatched-args)
   (:documentation "this is a helper method of parse-args. this function will
 parser `args' and store the result into `arguments' of `parser'
 and `nonmatched-args'. finally, it will return multiple values of options
 and the remaining arguments."))
 
-(defmethod parse-args-rec ((parser argument-parser) args
+(defmethod parse-args-rec ((parser argument-parser) args parse-result
                            &key (namespace nil) (nonmatched-args nil))
   (if (null args)
-      (values (parsed-options parser) (reverse nonmatched-args))
+      (values (parsed-options parse-result) (reverse nonmatched-args))
       (let ((target-arg (car args))
             (rest-args (cdr args)))
         (let ((match-argument (find-match-argument parser target-arg)))
           (if match-argument
               (parse-args-rec parser
                               (process-argument parser match-argument
+                                                parse-result
                                                 target-arg rest-args)
+                              parse-result
                               :namespace namespace
                               :nonmatched-args nonmatched-args)
               (parse-args-rec
-               parser rest-args
+               parser rest-args parse-result
                :namespace namespace
                :nonmatched-args (cons target-arg nonmatched-args)))))))
 
@@ -331,7 +340,18 @@ and the remaining arguments."))
 (defmethod parse-args ((parser argument-parser)
                        &optional (args (cdr clap-sys:*argv*))
                        &key (namespace nil))
-  (parse-args-rec parser args :namespace namespace :nonmatched-args nil))
+  (let ((parse-result (make-parse-result-dict parser)))
+    (parse-args-rec parser args parse-result
+                    :namespace namespace :nonmatched-args nil)))
+
+(defgeneric make-parse-result-dict (parser)
+  (:documentation "return a dictionary which is initialized by default values
+of arguments"))
+
+(defmethod make-parse-result-dict ((parser argument-parser))
+  (clap-builtin:dict (mapcar #'(lambda (a)
+                                 (cons (dest a) (default a)))
+                             (arguments parser))))
 
 #|
 (progn
