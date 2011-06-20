@@ -4,5 +4,6 @@
   (:shadow #:prog #:type)
   (:export #:argument-parser
            #:add-argument
-           #:parse-args)
+           #:parse-args
+           #:namespace)
   )

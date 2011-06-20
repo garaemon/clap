@@ -83,7 +83,7 @@ and it specifies the behavior of this argument.")
    (const :initarg :const :initform nil
           :accessor const
           :documentation "this slot is avialbe only if `action' is :store-const
-or :append-const. the value of `const' slot will be set to `value' slot
+or :append-const. the value of `const' slot will be set as the value
 if the :store-const or :append-const option is specified or `narg' is \"?\".")
    (default :initarg :default :initform nil
             :accessor default
