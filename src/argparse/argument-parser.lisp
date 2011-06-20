@@ -58,8 +58,7 @@ generated in default.")
               :initarg :arguments
               :initform nil
               :documentation "only for internal use. it just stores a list of
-argument instances.")
-   )
+argument instances."))
   (:documentation
    "this is an implementation of argparse.ArgumentParser class.
 this class is useful to parse the command line options and arguments."))
@@ -74,13 +73,21 @@ arguments. (default: to nil)")
           :accessor flags
           :documentation "a list of optional arguments.")
    (action :initarg :action :initform nil
-           :accessor action)
+           :accessor action
+           :documentation "`action' need to be one of `+argument-actions+'
+and it specifies the behavior of this argument.")
    (nargs :initarg :nargs :initform 1
-          :accessor nargs)
+          :accessor nargs
+          :documentation "the number of the parameters this argument requires.
+ (default: 1)")
    (const :initarg :const :initform nil
-          :accessor const)
+          :accessor const
+          :documentation "this slot is avialbe only if `action' is :store-const
+or :append-const. the value of `const' slot will be set to `value' slot
+if the :store-const or :append-const option is specified or `narg' is \"?\".")
    (default :initarg :default :initform nil
-            :accessor default)
+            :accessor default
+            :documentation "the default value of the option (or argument)")
    (type :initarg :type :initform nil
          :accessor type)
    (choices :initarg :choices :initform nil
@@ -96,7 +103,9 @@ arguments. (default: to nil)")
    (version :initarg :version :initform nil
             :accessor version)
    (value :initarg :value :initform nil
-           :accessor value))
+          :accessor value
+          :documentation "the value of `argument'. `namespace' instance will
+be created according to this value."))
   (:documentation
    "this is a class to represent an argument or an optional."))
 
@@ -104,6 +113,11 @@ arguments. (default: to nil)")
   (print-unreadable-object (object stream :type t)
     (format stream "~A [~s] [~s]" (action object)
             (or (name object) (flags object)) (value object))))
+
+(defmethod initialize-instance :after ((object argument) &rest initargs)
+  ;; `value' defaults to `default'
+  (setf (value object) (default object))
+  object)
 
 (defgeneric add-argument (parser name-or-flags
                           &key
@@ -149,17 +163,16 @@ arguments. (default: to nil)")
   ;; error check
   (let ((prefix (prefix-chars parser)))
     (cond
-      ((not (listp name-or-flags))
+      ((not (listp name-or-flags))      ; force to be a list
        (apply #'make-argument parser (list name-or-flags) args))
-      ((> (length name-or-flags) 1)
-       ;; all the flags should start with prefix
+      ((> (length name-or-flags) 1) ; all the flags should start with prefix
        (if (clap-builtin:all (mapcar #'(lambda (x)
                                          (clap-builtin:startswith x prefix))
                                      name-or-flags))
            (apply #'make-instance 'argument :flags name-or-flags args)
            (error "there is a flag which does not start with ~A in ~A"
                   prefix name-or-flags)))
-      ((clap-builtin:startswith (car name-or-flags) prefix)
+      ((clap-builtin:startswith (car name-or-flags) prefix) ;starts with "-"
        (apply #'make-instance 'argument :flags name-or-flags args))
       (t
        (apply #'make-instance 'argument :name (car name-or-flags) args)))))
@@ -218,13 +231,7 @@ arguments. (default: to nil)")
                (setf value (append value args))
                (setf value (append value (list args))))))
       (:append-const                      ;TODO: const is not supported
-       (if (null value)
-           (if (= nargs 1)
-               (setf value args)
-               (setf value (list args)))
-           (if (= nargs 1)
-               (setf value (append value args))
-               (setf value (append value (list args))))))
+       (error "not implemented yet"))
       (:version
        (format t version)
        (clap-sys:exit 0)))))
@@ -237,9 +244,38 @@ the arguments which should be processed afterwards."))
                              target-arg rest-args)
   ;; TODO: 'name' argument is not supported yet
   (with-slots (flags nargs) argument
-    (let ((next-rest-args (subseq rest-args nargs)))
-      (action-argument argument (subseq rest-args 0 nargs))
-      next-rest-args)))
+    ;; TODO: support ?
+    (cond
+      ((numberp nargs)
+       (let ((next-rest-args (subseq rest-args nargs)))
+         (action-argument argument (subseq rest-args 0 nargs))
+         next-rest-args))
+      ((string= nargs "?")
+       (error "not implemented yet"))
+      ((string= nargs "*")
+       ;; until find optional argument
+       (with-slots (prefix) parser
+         (let ((arg-num (loop
+                           for arg in rest-args
+                           for i from 0
+                           until (clap-builtin:startswith arg prefix)
+                           finally (return i))))
+           (let ((next-rest-args (subseq rest-args arg-num)))
+             (action-argument argument (subseq rest-args 0 arg-num))
+             next-rest-args))))
+      ((string= nargs "+")
+       (with-slots (prefix) parser
+         (let ((arg-num (loop
+                           for arg in rest-args
+                           for i from 0
+                           until (clap-builtin:startswith arg prefix)
+                           finally (return i))))
+           (if (= arg-num 0)
+               (error 'too-few-arguments :prog (prog parser)))
+           (let ((next-rest-args (subseq rest-args arg-num)))
+             (action-argument argument (subseq rest-args 0 arg-num))
+             next-rest-args))))
+       )))
 
 (defgeneric make-class-from-options (parser)
   (:documentation "return a class, that is an instance of standard-class.
@@ -250,8 +286,7 @@ ths slots and thir values are defined by the `arguments' of parser."))
     (let ((anon-class
            (make-instance 'standard-class
                           :direct-slots
-                          (mapcar #'(lambda (x) (list :name x
-                                                      :initform x))
+                          (mapcar #'(lambda (x) (list :name x))
                                   dests))))
       (make-instance anon-class))))
 
@@ -290,10 +325,12 @@ and the remaining arguments."))
                :namespace namespace
                :nonmatched-args (cons target-arg nonmatched-args)))))))
 
-(defgeneric parse-args (parser args &key namespace)
+(defgeneric parse-args (parser &optional args &key namespace)
   (:documentation "this is an implementation of ArgumentParser.parse_args. "))
 
-(defmethod parse-args ((parser argument-parser) args &key (namespace nil))
+(defmethod parse-args ((parser argument-parser)
+                       &optional (args (cdr clap-sys:*argv*))
+                       &key (namespace nil))
   (parse-args-rec parser args :namespace namespace :nonmatched-args nil))
 
 #|

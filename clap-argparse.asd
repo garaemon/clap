@@ -5,4 +5,6 @@
     :components
     ((:module "src/argparse" :components
               ((:file "clap-argparse")
-               (:file "argument-parser" :depends-on ("clap-argparse"))))))
+               (:file "condition" :depends-on ("clap-argparse"))
+               (:file "argument-parser" :depends-on ("clap-argparse"
+                                                     "condition"))))))
