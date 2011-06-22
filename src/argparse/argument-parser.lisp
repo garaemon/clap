@@ -296,16 +296,19 @@ the arguments which should be processed afterwards."))
   (print-help parser)
   (clap-sys:exit 0))
 
+(defun replace-prog (str prog)
+  (clap-builtin:replace str "%(prog)s" prog))
+
 (defgeneric print-usage (parser)
   (:documentation
    "print the usage of `parser'. if it is not specified, the usage will be
 generated automatically"))
 
 (defmethod print-usage ((parser argument-parser))
-  (with-slots (usage) parser
+  (with-slots (usage prog) parser
     (if (not (eq usage :generated))
         (progn
-          (format t usage)
+          (write-string (replace-prog usage prog))
           (terpri)))
     ))
 
@@ -314,8 +317,8 @@ generated automatically"))
    "print the description of `parser'."))
 
 (defmethod print-description ((parser argument-parser))
-  (with-slots (description) parser
-    (format t description)
+  (with-slots (description prog) parser
+    (write-string (replace-prog description prog))
     (terpri)))
 
 (defgeneric print-positional-arguments (parser)
@@ -337,10 +340,10 @@ generated automatically"))
    "print the `epilog' of the parser if it is specified."))
 
 (defmethod print-epilog ((parser argument-parser))
-  (with-slots (epilog) parser
+  (with-slots (epilog prog) parser
     (if epilog
         (progn
-          (format t epilog)
+          (write-string (replace-prog epilog prog))
           (terpri)))))
 
 (defgeneric print-help (parser)
@@ -349,15 +352,10 @@ generated automatically"))
 it just prints out the help to stdio."))
 
 (defmethod print-help ((parser argument-parser))
-  ;; usage
   (print-usage parser)
-  ;; description
   (print-description parser)
-  ;; positional arguments
   (print-positional-arguments parser)
-  ;; optional arguments
   (print-optional-arguments parser)
-  ;; epilog
   (print-epilog parser)
   t)
 
