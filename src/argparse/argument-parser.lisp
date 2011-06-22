@@ -111,7 +111,7 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
    "this is a special class to represent -h or --help option."))
 
 (defun make-help-argument ()
-  (make-instance 'help-argument))
+  (make-instance 'help-argument :flags '("-h" "--help")))
 
 (defmethod print-object ((object argument) stream)
   (print-unreadable-object (object stream :type t)
@@ -175,6 +175,13 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
        (apply #'make-instance 'argument :flags name-or-flags args))
       (t
        (apply #'make-instance 'argument :name (car name-or-flags) args)))))
+
+(defgeneric optional-argument-p (parser argument)
+  (:documentation "return T if `argument' is for optional argument"))
+
+(defmethod optional-argument-p ((parser argument-parser)
+                                (argument argument))
+  (not (name argument)))
 
 (defgeneric long-option-p (parser flag)
   (:documentation "return T if flag is a long option"))
@@ -309,8 +316,88 @@ generated automatically"))
     (if (not (eq usage :generated))
         (progn
           (write-string (replace-prog usage prog))
-          (terpri)))
-    ))
+          (terpri))
+        (let ((generated-usage (generate-usage parser)))
+          (write-string (replace-prog generated-usage prog))
+          (terpri)))))
+
+(defgeneric generate-usage (parser)
+  (:documentation
+   "generate the string of the usage from argument-parser object."))
+
+(defmethod generate-usage ((parser argument-parser))
+  (with-slots (prog) parser
+    (format nil "usage: ~A ~A ~A" prog
+            (generate-optional-arguments-usage parser)
+            (generate-positional-arguments-usage parser))))
+
+(defgeneric optional-arguments (parser)
+  (:documentation
+   "return a list of the `argument' instances for optional arguments"))
+
+(defmethod optional-arguments ((parser argument-parser))
+  (remove-if-not
+   #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
+
+(defgeneric positional-arguments (parser)
+  (:documentation
+   "return a list of the `argument' instances for positional arguments"))
+
+(defmethod positional-arguments ((parser argument-parser))
+  (remove-if
+   #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
+
+(defgeneric generate-one-optional-argument-usage (argument parser)
+  (:documentation
+   "generate the string showing usage of an optional argument."))
+
+(defmethod generate-one-optional-argument-usage ((argument argument)
+                                                 (parser argument-parser))
+  (let ((short-options
+         (remove-if #'(lambda (f) (long-option-p parser f))
+                    (flags argument))))
+    (if short-options
+        (format nil "[~A]" (car short-options))
+        (format nil "[~A]" (car (flags argument))))))
+
+(defgeneric generate-optional-arguments-usage (parser)
+  (:documentation
+   "return a string of the usage of optional arguments"))
+
+(defmethod generate-optional-arguments-usage ((parser argument-parser))
+  (clap-builtin:join
+   " "
+   (mapcar #'(lambda (argument)
+               (generate-one-optional-argument-usage argument parser))
+           (optional-arguments parser))))
+
+(defgeneric generate-one-positional-argument-usage (argument parser)
+  (:documentation
+   "return a string of the usage of positional arguments"))
+
+(defmethod generate-one-positional-argument-usage ((argument argument)
+                                                   (parser argument-parser))
+  (with-slots (metavar nargs) argument
+    (cond
+      ((numberp nargs)
+       (error "not implemented yet"))
+      ((string= nargs "?")
+       (error "not implemented yet"))
+      ((string= nargs "*")
+       (format nil "[~A ...]" metavar))
+      ((string= nargs "+")
+       (format nil "~A [~A ...]" metavar metavar)))))
+
+(defgeneric generate-positional-arguments-usage (parser)
+  (:documentation
+   "return a string of the usage of positional arguments"))
+
+(defmethod generate-positional-arguments-usage ((parser argument-parser))
+  (clap-builtin:join
+   " "
+   (mapcar #'(lambda (argument)
+               (generate-one-positional-argument-usage argument parser))
+           (positional-arguments parser))))
 
 (defgeneric print-description (parser)
   (:documentation
@@ -319,6 +406,7 @@ generated automatically"))
 (defmethod print-description ((parser argument-parser))
   (with-slots (description prog) parser
     (write-string (replace-prog description prog))
+    (terpri)
     (terpri)))
 
 (defgeneric print-positional-arguments (parser)
