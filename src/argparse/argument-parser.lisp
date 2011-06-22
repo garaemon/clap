@@ -13,7 +13,7 @@
 the arguments")
    (epilog :accessor epilog
            :initarg :epilog
-           :initform ""
+           :initform nil
            :documentation "text to display AFTER the help of the arguments")
    (add-help :accessor add-help
              :initarg :add-help
@@ -105,6 +105,14 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
   (:documentation
    "this is a class to represent an argument or an optional."))
 
+(defclass help-argument (argument)
+  ()
+  (:documentation
+   "this is a special class to represent -h or --help option."))
+
+(defun make-help-argument ()
+  (make-instance 'help-argument))
+
 (defmethod print-object ((object argument) stream)
   (print-unreadable-object (object stream :type t)
     (format stream "~A [~s]" (action object)
@@ -177,22 +185,29 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
    (concatenate 'string (prefix-chars parser) (prefix-chars parser))))
 
 (defgeneric find-match-argument (parser arg)
-  (:documentation ""))
+  (:documentation "return an instance of `argument' which is matched
+to parse `arg'."))
 
 (defmethod find-match-argument ((parser argument-parser) arg)
   (dolist (argument (arguments parser))
     (if (name argument)
+        ;; positional arguments
         (if (string= (name argument) arg)
-            (return-from find-match-argument argument))
-        (dolist (flag (flags argument))
-          (if (and (long-option-p parser flag)
-                   (= (clap-builtin:find arg "=") 1))
-              (multiple-value-bind (before partitioner after)
-                  (clap-builtin:partition arg "=")
-                (if (string= before flag)
-                    (return-from find-match-argument argument)))
-              (if (string= flag arg)
-                  (return-from find-match-argument argument)))))))
+            (return-from find-match-argument argument)))
+    ;; help?
+    (if (and (add-help parser) ;-h?
+             (or (string= arg "-h") (string= arg "--help")))
+        (return-from find-match-argument (make-help-argument)))
+    ;; optional arguments
+    (dolist (flag (flags argument))
+      (cond ((and (long-option-p parser flag)
+                  (= (clap-builtin:find arg "=") 1))
+             (multiple-value-bind (before partitioner after)
+                 (clap-builtin:partition arg "=")
+               (if (string= before flag)
+                   (return-from find-match-argument argument))))
+            ((string= flag arg)
+             (return-from find-match-argument argument))))))
 
 (defgeneric action-argument (argument args parse-result)
   (:documentation "this method will process `args' according to the
@@ -208,7 +223,8 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
              (setf value (car args))
              (setf value args)))
         (:store-const                       ;TODO: const is not supported
-         ;; TODO: what happen if narg=2 and "store_const" are used in Python 2.7?
+         ;; TODO: what happen if narg=2 and "store_const" are used
+         ;;       in Python 2.7?
          (setf value const))
         ((:store-true :store-t)
          (setf value t))
@@ -272,6 +288,79 @@ the arguments which should be processed afterwards."))
              next-rest-args))))
        )))
 
+(defmethod process-argument ((parser argument-parser)
+                             (argument help-argument)
+                             parse-result
+                             target-arg rest-args)
+  ;; just print the help and exit from it
+  (print-help parser)
+  (clap-sys:exit 0))
+
+(defgeneric print-usage (parser)
+  (:documentation
+   "print the usage of `parser'. if it is not specified, the usage will be
+generated automatically"))
+
+(defmethod print-usage ((parser argument-parser))
+  (with-slots (usage) parser
+    (if (not (eq usage :generated))
+        (progn
+          (format t usage)
+          (terpri)))
+    ))
+
+(defgeneric print-description (parser)
+  (:documentation
+   "print the description of `parser'."))
+
+(defmethod print-description ((parser argument-parser))
+  (with-slots (description) parser
+    (format t description)
+    (terpri)))
+
+(defgeneric print-positional-arguments (parser)
+  (:documentation
+   "print the help of the positional arguments."))
+
+(defmethod print-positional-arguments ((parser argument-parser))
+  (format t "positional arguments:~%"))
+
+(defgeneric print-optional-arguments (parser)
+  (:documentation
+   "print the help of the optional arguments."))
+
+(defmethod print-optional-arguments ((parser argument-parser))
+  (format t "optional arguments:~%"))
+
+(defgeneric print-epilog (parser)
+  (:documentation
+   "print the `epilog' of the parser if it is specified."))
+
+(defmethod print-epilog ((parser argument-parser))
+  (with-slots (epilog) parser
+    (if epilog
+        (progn
+          (format t epilog)
+          (terpri)))))
+
+(defgeneric print-help (parser)
+  (:documentation
+   "this is an implementation of ArgumentParser.print_help.
+it just prints out the help to stdio."))
+
+(defmethod print-help ((parser argument-parser))
+  ;; usage
+  (print-usage parser)
+  ;; description
+  (print-description parser)
+  ;; positional arguments
+  (print-positional-arguments parser)
+  ;; optional arguments
+  (print-optional-arguments parser)
+  ;; epilog
+  (print-epilog parser)
+  t)
+
 (defgeneric make-class-from-options (parse-result)
   (:documentation "return a class, that is an instance of standard-class.
 ths slots and thir values are defined by the `arguments' of parser."))
@@ -324,6 +413,13 @@ and the remaining arguments."))
                :namespace namespace
                :nonmatched-args (cons target-arg nonmatched-args)))))))
 
+(defgeneric verificate-arguments (parser result)
+  (:documentation
+   "verificate the arguments parsed"))
+
+(defmethod verificate-arguments ((parser argument-parser) (result hash-table))
+  t)
+
 (defgeneric parse-args (parser &optional args &key namespace)
   (:documentation "this is an implementation of ArgumentParser.parse_args. "))
 
@@ -331,8 +427,10 @@ and the remaining arguments."))
                        &optional (args (cdr clap-sys:*argv*))
                        &key (namespace nil))
   (let ((parse-result (make-parse-result-dict parser)))
-    (parse-args-rec parser args parse-result
-                    :namespace namespace :nonmatched-args nil)))
+    (prog1
+        (parse-args-rec parser args parse-result
+                        :namespace namespace :nonmatched-args nil)
+      (verificate-arguments parser parse-result))))
 
 (defgeneric make-parse-result-dict (parser)
   (:documentation "return a dictionary which is initialized by default values
