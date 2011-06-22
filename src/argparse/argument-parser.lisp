@@ -6,6 +6,8 @@
     :append :append-const
     :version))
 
+(clap-builtin::defconstant* +max-help-offset+ 10)
+
 (defclass argument-parser ()
   ((description :accessor description
                 :initarg :description
@@ -409,19 +411,61 @@ generated automatically"))
     (terpri)
     (terpri)))
 
-(defgeneric print-positional-arguments (parser)
+(defgeneric print-positional-argument-help (arg parser offset)
+  (:documentation
+   "print the help of a positional argument."))
+
+(defmethod print-positional-argument-help ((arg argument)
+                                           (parser argument-parser)
+                                           offset)
+  (with-slots (metavar help) arg
+    (let ((help-str (concatenate 'string
+                                 "  " metavar
+                                 (coerce (make-list offset :initial-element #\ )
+                                         'string)
+                                 help)))
+      (write-string help-str)
+      (terpri)
+      )))
+  
+(defgeneric print-optional-argument-help (arg parser offset)
+  (:documentation
+   "print the help of a optional argument."))
+
+(defmethod print-optional-argument-help ((arg argument)
+                                         (parser argument-parser)
+                                         offset)
+  (with-slots (metavar help) arg
+    (let ((help-str (concatenate 'string
+                                 "  "
+                                 (clap-builtin:join ", " (flags arg))
+                                 (coerce (make-list offset :initial-element #\ )
+                                         'string)
+                                 help)))
+      (write-string help-str)
+      (terpri)
+      )))
+
+(defgeneric print-positional-arguments (parser offset)
   (:documentation
    "print the help of the positional arguments."))
 
-(defmethod print-positional-arguments ((parser argument-parser))
-  (format t "positional arguments:~%"))
+(defmethod print-positional-arguments ((parser argument-parser) offset)
+  (format t "positional arguments:~%")
+  (dolist (arg (positional-arguments parser))
+    (print-positional-argument-help arg parser offset))
+  (terpri))
 
-(defgeneric print-optional-arguments (parser)
+(defgeneric print-optional-arguments (parser offset)
   (:documentation
    "print the help of the optional arguments."))
 
-(defmethod print-optional-arguments ((parser argument-parser))
-  (format t "optional arguments:~%"))
+(defmethod print-optional-arguments ((parser argument-parser) offset)
+  (format t "optional arguments:~%")
+  (dolist (arg (optional-arguments parser))
+    (print-optional-argument-help arg parser offset))
+  (terpri)
+  )
 
 (defgeneric print-epilog (parser)
   (:documentation
@@ -434,18 +478,34 @@ generated automatically"))
           (write-string (replace-prog epilog prog))
           (terpri)))))
 
+(defgeneric estimate-help-offset (parser)
+  (:documentation
+   "return the width of offset of help strings"))
+
+(defmethod estimate-help-offset ((parser argument-parser))
+  (let ((max-width
+         (apply #'max
+                (mapcar #'(lambda (x)
+                            (if (optional-argument-p parser x)
+                                (length (clap-builtin:join
+                                         ", " (flags x)))
+                                (length (metavar x))))
+                        (arguments parser)))))
+    max-width))
+
 (defgeneric print-help (parser)
   (:documentation
    "this is an implementation of ArgumentParser.print_help.
 it just prints out the help to stdio."))
 
 (defmethod print-help ((parser argument-parser))
-  (print-usage parser)
-  (print-description parser)
-  (print-positional-arguments parser)
-  (print-optional-arguments parser)
-  (print-epilog parser)
-  t)
+  (let ((offset (estimate-help-offset parser)))
+    (print-usage parser)
+    (print-description parser)
+    (print-positional-arguments parser offset)
+    (print-optional-arguments parser offset)
+    (print-epilog parser)
+    t))
 
 (defgeneric make-class-from-options (parse-result)
   (:documentation "return a class, that is an instance of standard-class.
