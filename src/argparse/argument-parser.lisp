@@ -421,12 +421,13 @@ generated automatically"))
   (with-slots (metavar help) arg
     (let ((help-str (concatenate 'string
                                  "  " metavar
-                                 (coerce (make-list offset :initial-element #\ )
+                                 (coerce (make-list
+                                          (- offset (length metavar))
+                                          :initial-element #\ )
                                          'string)
                                  help)))
       (write-string help-str)
-      (terpri)
-      )))
+      (terpri))))
   
 (defgeneric print-optional-argument-help (arg parser offset)
   (:documentation
@@ -436,15 +437,18 @@ generated automatically"))
                                          (parser argument-parser)
                                          offset)
   (with-slots (metavar help) arg
-    (let ((help-str (concatenate 'string
-                                 "  "
-                                 (clap-builtin:join ", " (flags arg))
-                                 (coerce (make-list offset :initial-element #\ )
-                                         'string)
-                                 help)))
-      (write-string help-str)
-      (terpri)
-      )))
+    (let ((option-str (clap-builtin:join ", " (flags arg))))
+      (let ((help-str (concatenate 'string
+                                   "  "
+                                   option-str
+                                   (coerce
+                                    (make-list (- offset (length option-str))
+                                               :initial-element #\ )
+                                    'string)
+                                   help)))
+        (write-string help-str)
+        (terpri)
+        ))))
 
 (defgeneric print-positional-arguments (parser offset)
   (:documentation
@@ -491,7 +495,7 @@ generated automatically"))
                                          ", " (flags x)))
                                 (length (metavar x))))
                         (arguments parser)))))
-    max-width))
+    (+ 2 max-width)))
 
 (defgeneric print-help (parser)
   (:documentation
