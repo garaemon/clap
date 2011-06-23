@@ -7,11 +7,10 @@
 class reports."))
 
 (define-condition too-few-arguments (argparse-error)
-  ((prog :initarg :prog
-         :reader too-few-arguments-prog))
+  ()
   (:report
    (lambda (c s)
-     (format s "~A: too few arguments" (too-few-arguments-prog c))))
+     (format s "too few arguments")))
   (:documentation
    "this is a condition which will be reported if there are too
 few arguments."))

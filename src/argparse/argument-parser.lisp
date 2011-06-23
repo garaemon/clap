@@ -290,7 +290,7 @@ the arguments which should be processed afterwards."))
                            until (clap-builtin:startswith arg prefix)
                            finally (return i))))
            (if (= arg-num 0)
-               (error 'too-few-arguments :prog (prog parser)))
+               (error 'too-few-arguments))
            (let ((next-rest-args (subseq rest-args arg-num)))
              (action-argument argument (subseq rest-args 0 arg-num)
                               parse-result)
@@ -568,7 +568,18 @@ and the remaining arguments."))
    "verificate the arguments parsed"))
 
 (defmethod verificate-arguments ((parser argument-parser) (result hash-table))
-  t)
+  (with-slots (arguments) parser
+    (dolist (arg arguments)
+      (with-slots (nargs) arg
+        (cond
+          ((numberp nargs)
+           nil)
+          ((string= nargs "+")
+           ;; required!
+           (if (null (clap-builtin:lookup result arg))
+               (error 'too-few-arguments)))
+          (t
+           nil))))))
 
 (defgeneric parse-args (parser &optional args &key namespace)
   (:documentation "this is an implementation of ArgumentParser.parse_args. "))
@@ -577,10 +588,16 @@ and the remaining arguments."))
                        &optional (args (cdr clap-sys:*argv*))
                        &key (namespace nil))
   (let ((parse-result (make-parse-result-dict parser)))
-    (prog1
-        (parse-args-rec parser args parse-result
-                        :namespace namespace :nonmatched-args nil)
-      (verificate-arguments parser parse-result))))
+    (handler-case
+        (prog1
+            (parse-args-rec parser args parse-result
+                            :namespace namespace :nonmatched-args nil)
+          (verificate-arguments parser parse-result))
+      (argparse-error
+          (c)
+        (print-usage parser)
+        (format t "~A: error: ~A~%" (prog parser) c)
+        (clap-sys:exit 2)))))
 
 (defgeneric make-parse-result-dict (parser)
   (:documentation "return a dictionary which is initialized by default values
