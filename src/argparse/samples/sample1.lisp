@@ -1,6 +1,3 @@
-(require :asdf)
-(setq asdf:*central-registry* '(#p"/Users/garaemon/kawauso/systems/"))
-
 (require :clap-argparse)
 
 (defvar *parser* (make-instance 'clap-argparse:argument-parser
