@@ -575,9 +575,9 @@ and the remaining arguments."))
           ((numberp nargs)
            nil)
           ((string= nargs "+")
-           ;; required!
            (if (null (clap-builtin:lookup result arg))
                (error 'too-few-arguments)))
+          ;; TODO: required flag
           (t
            nil))))))
 
