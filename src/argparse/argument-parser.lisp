@@ -48,9 +48,9 @@ prefix files from which additional arguments will be read.")
 the conflict of options")
    (prog :accessor prog
          :initarg :prog
-         :initform (car clap-sys:*argv*)
+         :initform (car (clap-sys:argv))
          :documentation "the name of the program.
-default: (car clap-sys:*argv*)")
+default: (car (clap-sys:argv))")
    (usage :accessor usage
           :initarg :usage
           :initform :generated
@@ -585,7 +585,7 @@ and the remaining arguments."))
   (:documentation "this is an implementation of ArgumentParser.parse_args. "))
 
 (defmethod parse-args ((parser argument-parser)
-                       &optional (args (cdr clap-sys:*argv*))
+                       &optional (args (cdr (clap-sys:argv)))
                        &key (namespace nil))
   (let ((parse-result (make-parse-result-dict parser)))
     (handler-case
