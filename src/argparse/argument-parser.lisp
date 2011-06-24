@@ -11,6 +11,7 @@
 (defclass argument-parser ()
   ((description :accessor description
                 :initarg :description
+                :initform ""
                 :documentation "text to display BEFORE the help of
 the arguments")
    (epilog :accessor epilog
@@ -413,9 +414,10 @@ generated automatically"))
 
 (defmethod print-description ((parser argument-parser))
   (with-slots (description prog) parser
-    (write-string (replace-prog description prog))
-    (terpri)
-    (terpri)))
+    (when (and description (not (= (length description) 0)))
+      (write-string (replace-prog description prog))
+      (terpri)
+      (terpri))))
 
 (defgeneric print-positional-argument-help (arg parser offset)
   (:documentation
@@ -452,32 +454,33 @@ generated automatically"))
                                                :initial-element #\ )
                                     'string)
                                    help)))
-        (write-string help-str)
-        (terpri)
-        ))))
+        (write-string help-str) (terpri)))))
 
 (defgeneric print-positional-arguments (parser offset)
   (:documentation
    "print the help of the positional arguments."))
 
 (defmethod print-positional-arguments ((parser argument-parser) offset)
-  (format t "positional arguments:~%")
-  (dolist (arg (positional-arguments parser))
-    (print-positional-argument-help arg parser offset))
-  (terpri))
+  (let ((positional-arguments (positional-arguments parser)))
+    (when positional-arguments
+      (format t "positional arguments:~%")
+      (dolist (arg positional-arguments)
+        (print-positional-argument-help arg parser offset)
+        (terpri)))))
+
 
 (defgeneric print-optional-arguments (parser offset)
   (:documentation
    "print the help of the optional arguments."))
 
 (defmethod print-optional-arguments ((parser argument-parser) offset)
-  (format t "optional arguments:~%")
-  (dolist (arg (if (add-help parser)
-                   (cons (make-help-argument) (optional-arguments parser))
-                   (optional-arguments parser)))
-    (print-optional-argument-help arg parser offset))
-  (terpri)
-  )
+  (let ((optional-arguments (if (add-help parser)
+                                (cons (make-help-argument)
+                                      (optional-arguments parser))
+                                (optional-arguments parser))))
+    (format t "optional arguments:~%")
+    (dolist (arg optional-arguments)
+      (print-optional-argument-help arg parser offset))))
 
 (defgeneric print-epilog (parser)
   (:documentation
@@ -519,6 +522,7 @@ it just prints out the help to stdio."))
     (print-positional-arguments parser offset)
     (print-optional-arguments parser offset)
     (print-epilog parser)
+    (finish-output)
     t))
 
 (defgeneric make-class-from-options (parse-result)

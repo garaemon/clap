@@ -5,5 +5,6 @@
   (:export #:argument-parser
            #:add-argument
            #:parse-args
-           #:namespace)
+           #:namespace
+           #:print-help)
   )

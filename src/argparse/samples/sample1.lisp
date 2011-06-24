@@ -19,8 +19,7 @@
       (print (apply (slot-value args 'accumulate)
                     (slot-value args 'integers))))))
 
-;;(main)
+(main)
 
-(sb-ext:save-lisp-and-die "sample1"
-                          :executable t
-                          :toplevel #'main)
+;;(sb-ext:save-lisp-and-die "sample1" :executable t :toplevel #'main)
+                          
