@@ -113,7 +113,10 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
    "this is a special class to represent -h or --help option."))
 
 (defun make-help-argument ()
-  (make-instance 'help-argument :flags '("-h" "--help")))
+  (make-instance 'help-argument
+                 :flags '("-h" "--help")
+                 :nargs 0
+                 :help "show this help message and exit"))
 
 (defmethod print-object ((object argument) stream)
   (print-unreadable-object (object stream :type t)
@@ -371,7 +374,10 @@ generated automatically"))
    " "
    (mapcar #'(lambda (argument)
                (generate-one-optional-argument-usage argument parser))
-           (optional-arguments parser))))
+           (if (add-help parser)
+               (cons (make-help-argument)
+                     (optional-arguments parser))
+               (optional-arguments parser)))))
 
 (defgeneric generate-one-positional-argument-usage (argument parser)
   (:documentation
@@ -466,7 +472,9 @@ generated automatically"))
 
 (defmethod print-optional-arguments ((parser argument-parser) offset)
   (format t "optional arguments:~%")
-  (dolist (arg (optional-arguments parser))
+  (dolist (arg (if (add-help parser)
+                   (cons (make-help-argument) (optional-arguments parser))
+                   (optional-arguments parser)))
     (print-optional-argument-help arg parser offset))
   (terpri)
   )
@@ -494,7 +502,9 @@ generated automatically"))
                                 (length (clap-builtin:join
                                          ", " (flags x)))
                                 (length (metavar x))))
-                        (arguments parser)))))
+                        (if (add-help parser)
+                            (cons (make-help-argument) (arguments parser))
+                            (arguments parser))))))
     (+ 2 max-width)))
 
 (defgeneric print-help (parser)
