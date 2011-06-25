@@ -66,6 +66,15 @@ argument instances."))
    "this is an implementation of argparse.ArgumentParser class.
 this class is useful to parse the command line options and arguments."))
 
+(defmethod initialize-instance :after ((parser argument-parser)
+                                       &rest initargs)
+  (declare (ignore initargs))
+  (if (add-help parser)
+      (setf (arguments parser)
+            (cons (make-help-argument parser) (arguments parser))))
+  )
+                                       
+
 (defclass argument ()
   ((name :initarg :name :initform nil
          :accessor name
@@ -113,7 +122,11 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
   (:documentation
    "this is a special class to represent -h or --help option."))
 
-(defun make-help-argument ()
+(defgeneric make-help-argument (parser)
+  (:documentation
+   "make a help-argument instance using `argument-parser'."))
+
+(defmethod make-help-argument ((parser argument-parser))
   (make-instance 'help-argument
                  :flags '("-h" "--help")
                  :nargs 0
@@ -207,10 +220,6 @@ to parse `arg'."))
         ;; positional arguments
         (if (string= (name argument) arg)
             (return-from find-match-argument argument)))
-    ;; help?
-    (if (and (add-help parser) ;-h?
-             (or (string= arg "-h") (string= arg "--help")))
-        (return-from find-match-argument (make-help-argument)))
     ;; optional arguments
     (dolist (flag (flags argument))
       (cond ((and (long-option-p parser flag)
@@ -375,10 +384,7 @@ generated automatically"))
    " "
    (mapcar #'(lambda (argument)
                (generate-one-optional-argument-usage argument parser))
-           (if (add-help parser)
-               (cons (make-help-argument)
-                     (optional-arguments parser))
-               (optional-arguments parser)))))
+           (optional-arguments parser))))
 
 (defgeneric generate-one-positional-argument-usage (argument parser)
   (:documentation
@@ -474,10 +480,7 @@ generated automatically"))
    "print the help of the optional arguments."))
 
 (defmethod print-optional-arguments ((parser argument-parser) offset)
-  (let ((optional-arguments (if (add-help parser)
-                                (cons (make-help-argument)
-                                      (optional-arguments parser))
-                                (optional-arguments parser))))
+  (let ((optional-arguments (optional-arguments parser)))
     (format t "optional arguments:~%")
     (dolist (arg optional-arguments)
       (print-optional-argument-help arg parser offset))))
@@ -505,9 +508,7 @@ generated automatically"))
                                 (length (clap-builtin:join
                                          ", " (flags x)))
                                 (length (metavar x))))
-                        (if (add-help parser)
-                            (cons (make-help-argument) (arguments parser))
-                            (arguments parser))))))
+                        (arguments parser)))))
     (+ 2 max-width)))
 
 (defgeneric print-help (parser)
