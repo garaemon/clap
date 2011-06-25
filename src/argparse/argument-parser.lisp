@@ -72,7 +72,7 @@ this class is useful to parse the command line options and arguments."))
   (if (add-help parser)
       (setf (arguments parser)
             (cons (make-help-argument parser) (arguments parser))))
-  )
+  parser)
                                        
 
 (defclass argument ()
@@ -141,6 +141,49 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
     (format stream "~A [~s]" (action object)
             (or (name object) (flags object)))))
 
+(defgeneric ensure-dest (arg parser)
+  (:documentation
+   "if `dest' is null, estimate `dest' from the name of the argument and set
+`dest' slot of the argument."))
+
+(defmethod ensure-dest ((arg argument) (parser argument-parser))
+  (if (null (dest arg))
+      (if (name arg)
+          (setf (dest arg) (read-from-string (name arg)))
+          (setf (dest arg)
+                (read-from-string (clap-builtin:lstrip
+                                   (car (flags arg))
+                                   (prefix-chars parser))))))
+  arg)
+
+(defgeneric ensure-nargs (arg)
+  (:documentation
+   "set `nargs' to satisfy the `action'."))
+
+(defmethod ensure-nargs ((arg argument))
+  (with-slots (action nargs) arg
+    (cond
+      ((eq action :store-const)
+       (setf nargs 0))
+      ))
+  arg)
+
+(defgeneric verificate-duplicate-arguments (parser name-or-flags)
+  (:documentation
+   "report an error if `name-or-flags' duplicates with the `arguments' of
+`parser'."))
+
+(defmethod verificate-duplicate-arguments ((parser argument-parser)
+                                           name-or-flags)
+  (let ((names-and-flags
+         (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
+                 (arguments parser))))
+    (dolist (name-or-flag (if (listp name-or-flags)
+                              name-or-flags
+                              (list name-or-flags)))
+      (if (find name-or-flag names-and-flags :test #'string=)
+          (error "you have already use ~A option" name-or-flag)))))
+
 (defgeneric add-argument (parser name-or-flags
                           &key
                           action nargs const
@@ -159,45 +202,44 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
                             :default default :type type :choices choices
                             :required required :help help :metavar metavar
                             :dest dest :version version)))
-    ;; check duplication
-    (let ((names-and-flags
-           (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
-                   (arguments parser))))
-      (dolist (name-or-flag (if (listp name-or-flags)
-                                name-or-flags
-                                (list name-or-flags)))
-        (if (find name-or-flag names-and-flags :test #'string=)
-            (error "you have already use ~A option" name-or-flag))))
-    ;; dest estimation
-    (if (null dest)
-        (if (name arg)
-            (setf (dest arg) (read-from-string (name arg)))
-            (setf (dest arg)
-                  (read-from-string (clap-builtin:lstrip
-                                     (car (flags arg))
-                                     (prefix-chars parser))))))
+    (verificate-duplicate-arguments parser name-or-flags)
+    (ensure-dest arg parser)
+    (ensure-nargs arg)
     (push arg (arguments parser))))
+
+(defgeneric verificate-argument-name (parser name-or-flags)
+  (:documentation
+   "verificate `name-or-flags' is valid for arguments. if not,
+it reports an error. it the `name-or-flags' is valid, it returns
+:flags or :name."))
+
+(defmethod verificate-argument-name ((parser argument-parser)
+                                     (name-or-flags list))
+  (let ((prefix (prefix-chars parser)))
+    (cond
+      ((> (length name-or-flags) 1) ; all the flags should start with prefix
+       (if (clap-builtin:all (mapcar #'(lambda (x)
+                                         (clap-builtin:startswith x prefix))
+                                     name-or-flags))
+           :flags
+           (error "there is a flag which does not start with ~A in ~A"
+                  prefix name-or-flags)))
+      ((clap-builtin:startswith (car name-or-flags) prefix) ;starts with "-"
+       :flags)
+      ((= (length name-or-flags) 1)
+       :name)
+      (t
+       (error "more than one names are specified as argument name")))))
 
 (defgeneric make-argument (parser name-or-flags &rest args)
   (:documentation "create an instance of argument class."))
 
 (defmethod make-argument ((parser argument-parser) name-or-flags &rest args)
-  ;; error check
-  (let ((prefix (prefix-chars parser)))
-    (cond
-      ((not (listp name-or-flags))      ; force to be a list
-       (apply #'make-argument parser (list name-or-flags) args))
-      ((> (length name-or-flags) 1) ; all the flags should start with prefix
-       (if (clap-builtin:all (mapcar #'(lambda (x)
-                                         (clap-builtin:startswith x prefix))
-                                     name-or-flags))
-           (apply #'make-instance 'argument :flags name-or-flags args)
-           (error "there is a flag which does not start with ~A in ~A"
-                  prefix name-or-flags)))
-      ((clap-builtin:startswith (car name-or-flags) prefix) ;starts with "-"
-       (apply #'make-instance 'argument :flags name-or-flags args))
-      (t
-       (apply #'make-instance 'argument :name (car name-or-flags) args)))))
+  (if (not (listp name-or-flags))      ; force to be a list
+      (apply #'make-argument parser (list name-or-flags) args)
+   (case (verificate-argument-name parser name-or-flags)
+     (:flags (apply #'make-instance 'argument :flags name-or-flags args))
+     (:name (apply #'make-instance 'argument :name (car name-or-flags) args)))))
 
 (defgeneric optional-argument-p (parser argument)
   (:documentation "return T if `argument' is for optional argument"))
@@ -366,6 +408,18 @@ generated automatically"))
   (remove-if
    #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
 
+(defun argument-format (metavar nargs)
+  (cond
+    ((numberp nargs)
+     (clap-builtin:join " "
+                        (make-list nargs :initial-element metavar)))
+    ((string= nargs "*")
+     (format nil "[~A [~A ...]]" metavar metavar)) ; [U [U ...]]
+    ((string= nargs "+")
+     (format nil "~A [~A ...]" metavar metavar)) ; U [U ...]
+    ((string= nargs "?")
+     (format nil "[~A]" metavar)))) ; [U]
+
 (defgeneric generate-one-optional-argument-usage (argument parser)
   (:documentation
    "generate the string showing usage of an optional argument."))
@@ -375,9 +429,16 @@ generated automatically"))
   (let ((short-options
          (remove-if #'(lambda (f) (long-option-p parser f))
                     (flags argument))))
-    (if short-options
-        (format nil "[~A]" (car short-options))
-        (format nil "[~A]" (car (flags argument))))))
+    (let ((option-str
+           (if short-options
+               (car short-options)
+               (car (flags argument)))))
+      (with-slots (nargs metavar) argument
+        (format nil "[~A]"
+                (clap-builtin:join
+                 " "
+                 (list option-str
+                       (argument-format metavar nargs))))))))
 
 (defgeneric generate-optional-arguments-usage (parser)
   (:documentation

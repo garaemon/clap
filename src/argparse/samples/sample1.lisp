@@ -18,7 +18,6 @@
     (let ((args (clap-argparse:parse-args parser)))
       (print (apply (slot-value args 'accumulate)
                     (slot-value args 'integers))))))
-
 (main)
 
 ;;(sb-ext:save-lisp-and-die "sample1" :executable t :toplevel #'main)
