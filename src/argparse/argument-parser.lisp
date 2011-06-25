@@ -537,13 +537,20 @@ generated automatically"))
 (defmethod print-optional-argument-help ((arg argument)
                                          (parser argument-parser)
                                          offset)
-  (with-slots (metavar help) arg
-    (let ((option-str (clap-builtin:join ", " (flags arg))))
+  (with-slots (metavar help nargs) arg
+    (let ((option-str (clap-builtin:join ", " (flags arg)))
+          (argument-str (argument-format metavar nargs)))
       (let ((help-str (concatenate 'string
                                    "  "
                                    option-str
+                                   " "
+                                   argument-str
                                    (coerce
-                                    (make-list (- offset (length option-str))
+                                    (make-list (max (- offset
+                                                       (+ (length option-str)
+                                                          (length argument-str)
+                                                          1))
+                                                    2)
                                                :initial-element #\ )
                                     'string)
                                    help)))
