@@ -127,10 +127,14 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
    "make a help-argument instance using `argument-parser'."))
 
 (defmethod make-help-argument ((parser argument-parser))
-  (make-instance 'help-argument
-                 :flags '("-h" "--help")
-                 :nargs 0
-                 :help "show this help message and exit"))
+  (with-slots (prefix-chars) parser
+    (make-instance 'help-argument
+                   :flags (list
+                           (concatenate 'string prefix-chars "h")
+                           (concatenate 'string prefix-chars prefix-chars
+                                        "help"))
+                   :nargs 0
+                   :help "show this help message and exit")))
 
 (defmethod print-object ((object argument) stream)
   (print-unreadable-object (object stream :type t)
