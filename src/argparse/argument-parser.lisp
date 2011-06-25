@@ -147,13 +147,32 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
 `dest' slot of the argument."))
 
 (defmethod ensure-dest ((arg argument) (parser argument-parser))
-  (if (null (dest arg))
-      (if (name arg)
-          (setf (dest arg) (read-from-string (name arg)))
-          (setf (dest arg)
-                (read-from-string (clap-builtin:lstrip
-                                   (car (flags arg))
-                                   (prefix-chars parser))))))
+  (when (null (dest arg))
+    (if (name arg)
+        (setf (dest arg) (read-from-string (name arg)))
+        (setf (dest arg)
+              (read-from-string (clap-builtin:lstrip
+                                 (car (flags arg))
+                                 (prefix-chars parser))))))
+  arg)
+
+(defgeneric ensure-metavar (arg parser)
+  (:documentation
+   "if `metavar' is null, estimate `metavar' from the name of the argument and
+set `metavar' slot of the argument."))
+
+(defmethod ensure-metavar ((arg argument) (parser argument-parser))
+  (with-slots (metavar nargs name flags) arg
+    (when (and (null metavar)
+               (not (and (numberp nargs) (= nargs 0))))
+      (with-slots (prefix-chars) parser
+        (cond
+          (name
+           (setf metavar (clap-builtin:upper name)))
+          (flags
+           ;; tmp
+           (setf metavar (clap-builtin:upper
+                          (clap-builtin:lstrip (car flags) prefix-chars))))))))
   arg)
 
 (defgeneric ensure-nargs (arg)
@@ -205,6 +224,7 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
     (verificate-duplicate-arguments parser name-or-flags)
     (ensure-dest arg parser)
     (ensure-nargs arg)
+    (ensure-metavar arg parser)
     (push arg (arguments parser))))
 
 (defgeneric verificate-argument-name (parser name-or-flags)
@@ -411,8 +431,10 @@ generated automatically"))
 (defun argument-format (metavar nargs)
   (cond
     ((numberp nargs)
-     (clap-builtin:join " "
-                        (make-list nargs :initial-element metavar)))
+     (if (= nargs 0)
+         ""
+         (clap-builtin:join " "
+                            (make-list nargs :initial-element metavar))))
     ((string= nargs "*")
      (format nil "[~A [~A ...]]" metavar metavar)) ; [U [U ...]]
     ((string= nargs "+")
