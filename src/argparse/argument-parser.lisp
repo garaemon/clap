@@ -170,9 +170,17 @@ set `metavar' slot of the argument."))
           (name
            (setf metavar (clap-builtin:upper name)))
           (flags
-           ;; tmp
-           (setf metavar (clap-builtin:upper
-                          (clap-builtin:lstrip (car flags) prefix-chars))))))))
+           ;; check `arg' has a long option or not. if so, 
+           ;; use it as `metavar'
+           (let ((long-options
+                  (remove-if-not #'(lambda (f) (long-option-p parser f))
+                                 flags)))
+             (if (null long-options)
+                 (setf metavar (clap-builtin:upper
+                                (clap-builtin:lstrip (car flags) prefix-chars)))
+                 (setf metavar (clap-builtin:upper
+                                (clap-builtin:lstrip (car long-options)
+                                                     prefix-chars))))))))))
   arg)
 
 (defgeneric ensure-nargs (arg)
@@ -529,7 +537,9 @@ generated automatically"))
                                  help)))
       (write-string help-str)
       (terpri))))
-  
+
+
+
 (defgeneric print-optional-argument-help (arg parser offset)
   (:documentation
    "print the help of a optional argument."))
@@ -716,18 +726,3 @@ of arguments"))
   (clap-builtin:dict (mapcar #'(lambda (a)
                                  (cons (dest a) (default a)))
                              (arguments parser))))
-
-#|
-(progn
-  (require :clap-argparse)
-  (setq p (make-instance 'clap-argparse:argument-parser))
-  (clap-argparse:add-argument p '("-p" "-q"))
-  (clap-argparse:add-argument p '("-a"))
-  (describe (clap-argparse::parse-args p (clap-builtin:split "-q 1 -a 2"))))
-
-(progn
-  (setq p (make-instance 'clap-argparse:argument-parser))
-  (clap-argparse:add-argument p '("--foo") :action :append)
-  (describe (clap-argparse::parse-args p (clap-builtin:split "--foo 1 --foo 2")))
-  )
-|#
