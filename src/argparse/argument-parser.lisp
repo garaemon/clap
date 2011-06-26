@@ -464,11 +464,14 @@ generated automatically"))
                (car short-options)
                (car (flags argument)))))
       (with-slots (nargs metavar) argument
-        (format nil "[~A]"
-                (clap-builtin:join
-                 " "
-                 (list option-str
-                       (argument-format metavar nargs))))))))
+        (let ((argument-str (argument-format metavar nargs)))
+          (format nil "[~A]"
+                  (clap-builtin:join
+                   " "
+
+                   (if (string= argument-str "")
+                       (list option-str)
+                       (list option-str argument-str)))))))))
 
 (defgeneric generate-optional-arguments-usage (parser)
   (:documentation
@@ -537,8 +540,6 @@ generated automatically"))
                                  help)))
       (write-string help-str)
       (terpri))))
-
-
 
 (defgeneric print-optional-argument-help (arg parser offset)
   (:documentation
