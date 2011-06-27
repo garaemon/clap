@@ -28,3 +28,10 @@
               :do (setf (schar result pos) c) (incf pos)))
       result)))
 
+(defun flatten (list)
+  "well-known flatten function"
+  (cond ((atom list) list)
+        ((listp (car list))
+         (append (flatten (car list)) (flatten (cdr list))))
+        (t
+         (append (list (car list)) (flatten (cdr list))))))

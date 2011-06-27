@@ -105,5 +105,6 @@
            ;; condition.lisp
            #:not-implemented-yet
            #:class-method-not-supported
-           #:value-error #:key-error)
+           #:value-error #:key-error
+           #:flatten)
   )
