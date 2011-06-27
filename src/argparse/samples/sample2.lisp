@@ -13,3 +13,15 @@
   (clap-argparse:add-argument parser "--foo"
                               :help "foo help")
   (clap-argparse:print-help parser))
+
+(let ((parser (make-instance 'clap-argparse:argument-parser
+                             :prog "PROG"
+                             :prefix-chars "+")))
+  (clap-argparse:print-help parser))
+
+(let ((parser (make-instance 'clap-argparse:argument-parser
+                             :prog "PROG"
+                             :prefix-chars "+")))
+  (clap-argparse:add-argument parser "+f")
+  (clap-argparse:add-argument parser "++bar")
+  (describe (clap-argparse:parse-args parser (clap-builtin:split "+f X ++bar Y"))))

@@ -203,13 +203,15 @@ set `metavar' slot of the argument."))
 (defmethod verificate-duplicate-arguments ((parser argument-parser)
                                            name-or-flags)
   (let ((names-and-flags
-         (mapcan #'(lambda (x) (if (name x) (name x) (flags x)))
-                 (arguments parser))))
+         (clap-builtin:flatten
+          (mapcar #'(lambda (x) (if (name x) (name x) (flags x)))
+                  (arguments parser)))))
     (dolist (name-or-flag (if (listp name-or-flags)
                               name-or-flags
                               (list name-or-flags)))
       (if (find name-or-flag names-and-flags :test #'string=)
-          (error "you have already use ~A option" name-or-flag)))))
+          (error "you have already use ~A option" name-or-flag))))
+  t)
 
 (defgeneric add-argument (parser name-or-flags
                           &key
@@ -233,7 +235,8 @@ set `metavar' slot of the argument."))
     (ensure-dest arg parser)
     (ensure-nargs arg)
     (ensure-metavar arg parser)
-    (push arg (arguments parser))))
+    (push arg (arguments parser))
+    arg))
 
 (defgeneric verificate-argument-name (parser name-or-flags)
   (:documentation
@@ -312,7 +315,8 @@ to parse `arg'."))
 
 (defmethod action-argument ((argument argument) args parse-result)
   (with-slots (action nargs const version) argument
-    (symbol-macrolet ((value (clap-builtin:lookup parse-result argument)))
+    (symbol-macrolet ((value (clap-builtin:lookup parse-result
+                                                  (dest argument))))
       (case action
         (:store
          (if (= nargs 1)
@@ -636,7 +640,7 @@ it just prints out the help to stdio."))
 ths slots and thir values are defined by the `arguments' of parser."))
 
 (defmethod make-class-from-options ((parse-result hash-table))
-  (let ((dests (mapcar #'car (clap-builtin:items parse-result))))
+  (let ((dests (clap-builtin:keys parse-result)))
     (let ((anon-class
            (make-instance 'standard-class
                           :direct-slots
@@ -724,6 +728,10 @@ and the remaining arguments."))
 of arguments"))
 
 (defmethod make-parse-result-dict ((parser argument-parser))
-  (clap-builtin:dict (mapcar #'(lambda (a)
-                                 (cons (dest a) (default a)))
-                             (arguments parser))))
+  (clap-builtin:dict (remove-if
+                      #'null
+                      (mapcar #'(lambda (a)
+                                  (if (dest a)
+                                      (cons (dest a) (default a))
+                                      nil))
+                              (arguments parser)))))
