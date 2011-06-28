@@ -240,7 +240,7 @@ set `metavar' slot of the argument."))
     (ensure-dest arg parser)
     (ensure-nargs arg)
     (ensure-metavar arg parser)
-    (push arg (arguments parser))
+    (setf (arguments parser) (cons arg (arguments parser)))
     arg))
 
 (defgeneric verificate-argument-name (parser name-or-flags)
@@ -297,11 +297,12 @@ it reports an error. it the `name-or-flags' is valid, it returns
 to parse `arg'."))
 
 (defmethod find-match-argument ((parser argument-parser) arg)
-  (dolist (argument (arguments parser))
-    (if (name argument)
-        ;; positional arguments
-        (if (string= (name argument) arg)
-            (return-from find-match-argument argument)))
+  ;; first of all, check the optional arguments
+  (dolist (argument (optional-arguments (arguments parser)))
+    ;; (if (name argument)
+    ;;     ;; positional arguments
+    ;;     (if (string= (name argument) arg)
+    ;;         (return-from find-match-argument argument)))
     ;; optional arguments
     (dolist (flag (flags argument))
       (cond ((and (long-option-p parser flag)
@@ -311,7 +312,9 @@ to parse `arg'."))
                (if (string= before flag)
                    (return-from find-match-argument argument))))
             ((string= flag arg)
-             (return-from find-match-argument argument))))))
+             (return-from find-match-argument argument)))))
+  ;; no optional argument is matched. 
+  )
 
 (defgeneric action-argument (argument args parse-result)
   (:documentation "this method will process `args' according to the
