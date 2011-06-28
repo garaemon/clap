@@ -14,6 +14,7 @@
                               :help "foo help")
   (clap-argparse:print-help parser))
 
+;; prefix-chars usage
 (let ((parser (make-instance 'clap-argparse:argument-parser
                              :prog "PROG"
                              :prefix-chars "+")))
@@ -24,4 +25,23 @@
                              :prefix-chars "+")))
   (clap-argparse:add-argument parser "+f")
   (clap-argparse:add-argument parser "++bar")
-  (describe (clap-argparse:parse-args parser (clap-builtin:split "+f X ++bar Y"))))
+  (describe (clap-argparse:parse-args parser
+                                      (clap-builtin:split "+f X ++bar Y"))))
+
+;; parent sample
+(let ((parent-parser (make-instance 'clap-argparse:argument-parser
+                                    :add-help nil)))
+  (clap-argparse:add-argument parent-parser "--parent" :type 'int)
+  (let ((foo-parser (make-instance 'clap-argparse:argument-parser
+                                   :parents (list parent-parser))))
+    (clap-argparse:add-argument foo-parser "foo")
+    (describe (clap-argparse:parse-args foo-parser
+                                        (clap-builtin:split "--parent 2 XXX"))))
+  (let ((bar-parser (make-instance 'clap-argparse:argument-parser
+                                   :parents (list parent-parser))))
+    (clap-argparse:add-argument bar-parser "--bar")
+    (describe (clap-argparse:parse-args
+               bar-parser
+               (clap-builtin:split "--parent 2 --bar YYY")))))
+    
+  
