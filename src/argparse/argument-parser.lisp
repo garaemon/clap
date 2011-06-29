@@ -292,29 +292,23 @@ it reports an error. it the `name-or-flags' is valid, it returns
    flag
    (concatenate 'string (prefix-chars parser) (prefix-chars parser))))
 
-(defgeneric find-match-argument (parser arg)
+(defgeneric find-match-optional-argument (parser arg parse-result)
   (:documentation "return an instance of `argument' which is matched
 to parse `arg'."))
 
-(defmethod find-match-argument ((parser argument-parser) arg)
-  ;; first of all, check the optional arguments
-  (dolist (argument (optional-arguments (arguments parser)))
-    ;; (if (name argument)
-    ;;     ;; positional arguments
-    ;;     (if (string= (name argument) arg)
-    ;;         (return-from find-match-argument argument)))
-    ;; optional arguments
+(defmethod find-match-optional-argument
+    ((parser argument-parser) arg parse-result)
+  (dolist (argument (optional-arguments parser))
     (dolist (flag (flags argument))
       (cond ((and (long-option-p parser flag)
                   (= (clap-builtin:find arg "=") 1))
              (multiple-value-bind (before partitioner after)
                  (clap-builtin:partition arg "=")
                (if (string= before flag)
-                   (return-from find-match-argument argument))))
+                   (return-from find-match-optional-argument argument))))
             ((string= flag arg)
-             (return-from find-match-argument argument)))))
-  ;; no optional argument is matched. 
-  )
+             (return-from find-match-optional-argument argument)))))
+  nil)
 
 (defgeneric action-argument (argument args parse-result)
   (:documentation "this method will process `args' according to the
@@ -330,7 +324,7 @@ to parse `arg'."))
          (if (= nargs 1)
              (setf value (car args))
              (setf value args)))
-        (:store-const                       ;TODO: const is not supported
+        (:store-const
          ;; TODO: what happen if narg=2 and "store_const" are used
          ;;       in Python 2.7?
          (setf value const))
@@ -668,29 +662,33 @@ of remained arguments."))
       (setf (slot-value class (car arg)) (cdr arg)))
     class))
 
-(defgeneric parse-args-rec (parser args parse-result
-                            &key namespace nonmatched-args)
+(defgeneric parse-optional-args-rec (parser args parse-result
+                                            &key namespace nonmatched-args)
   (:documentation "this is a helper method of parse-args. this function will
-parser `args' and store the result into `arguments' of `parser'
-and `nonmatched-args'. finally, it will return multiple values of options
-and the remaining arguments."))
+parser optional arguments of `args' and store the result into `arguments'
+of `parser' and `nonmatched-args'. finally, it will return multiple values
+of options and the remaining arguments."))
 
-(defmethod parse-args-rec ((parser argument-parser) args parse-result
-                           &key (namespace nil) (nonmatched-args nil))
+(defmethod parse-optional-args-rec ((parser argument-parser) args parse-result
+                                    &key (namespace nil)
+                                    (nonmatched-args nil))
   (if (null args)
-      (values (parsed-options parse-result) (reverse nonmatched-args))
+      (values parse-result (reverse nonmatched-args))
+      ;;(values (parsed-options parse-result) (reverse nonmatched-args))
       (let ((target-arg (car args))
             (rest-args (cdr args)))
-        (let ((match-argument (find-match-argument parser target-arg)))
+        ;; first of all, parse optional argument
+        (let ((match-argument (find-match-optional-argument
+                               parser target-arg parse-result)))
           (if match-argument
-              (parse-args-rec parser
+              (parse-optional-args-rec parser
                               (process-argument parser match-argument
                                                 parse-result
                                                 target-arg rest-args)
                               parse-result
                               :namespace namespace
                               :nonmatched-args nonmatched-args)
-              (parse-args-rec
+              (parse-optional-args-rec
                parser rest-args parse-result
                :namespace namespace
                :nonmatched-args (cons target-arg nonmatched-args)))))))
@@ -713,18 +711,237 @@ and the remaining arguments."))
           (t
            nil))))))
 
+(defun minimum-args-num (positional-arguments)
+  "return sum of the minimum number of arguments"
+  (apply #'+
+         (mapcar #'(lambda (arg)
+                     (with-slots (nargs) arg
+                       (minimum-arg-num nargs)))
+                 positional-arguments)))
+
+(defun minimum-arg-num (nargs)
+  "return the minumu number of arguments for `nargs'"
+  (cond
+    ((numberp nargs)
+     nargs)
+    ((string= nargs "?")
+     0)
+    ((string= nargs "*")
+     0)
+    ((string= nargs "+")
+     1)))
+
+(defmethod split-positional-arguments ((parser argument-parser) args)
+  (let ((positional-arguments (positional-arguments parser)))
+    (let ((min-args-num (minimum-args-num positional-arguments)))
+      (cond ((< (length args) min-args-num)
+             (error 'too-few-arguments))
+            ((= (length args) min-args-num)
+             (let ((minarg-list (mapcar #'minimum-arg-num
+                                        (mapcar #'nargs positional-arguments))))
+               (let ((start-index-list (loop for sum = 0 then (+ sum n)
+                                          for n in minarg-list
+                                          collect sum)))
+                 (print start-index-list)
+                 (print args)
+                 (loop for prev = 0 then i
+                    for i in (append (cdr start-index-list)
+                                     (list (length args)))
+                    collect (subseq args prev i)))))
+            ((> (length args) min-args-num)
+             (vararg-split-positional-arguments parser args))))))
+
+(defgeneric vararg-policy (parser args)
+  (:documentation
+   "return the policy of vararg. the policy are represented by :*, :+, :?
+or NIL."))
+
+(defmethod vararg-policy ((parser argument-parser) args)
+  (let ((positional-arguments (positional-arguments parser)))
+    (let ((narg-list (mapcar #'narg positional-arguments))
+          (args-num (length args)))
+      (let ((leftest-* (position "*" narg-list :test #'equal))
+            (leftest-+ (position "*" narg-list :test #'equal))
+            (leftest-? (position "?" narg-list :test #'equal)))
+        (cond
+          ((and leftest-* leftest-+)
+           (if (< leftest-* leftest-+) :* :+))
+          (leftest-* :*)
+          (leftest-+ :+)
+          (leftest-?                       ;nargs only has ?s
+           (let ((?num (length
+                        (remove-if-not #'(lambda (x) (and (stringp x)
+                                                          (string= x "?")))
+                                       narg-list)))
+                 (min-args-num (minimum-args-num positional-arguments)))
+             (if (<= min-args-num (length args) (+ min-args-num ?num))
+                 :?
+                 nil)))
+          (t nil))))))
+
+;; left-prior rule
+;; ? ? * ?
+;;       ^ ignored
+;; ? ? * *
+;;       ^ ignored
+;; ? ? * +
+;;       ^ only 1
+;; ? ? * 1
+;;       ^ not-ignored
+
+(defun nargs-list-fill-righter (narg-list leftest)
+  "set the number of the arguments which are located in right of `leftest'"
+  (loop for nargs in narg-list
+     for i from 0
+     if (<= i leftest)
+     collect nargs
+     else if (> i leftest)
+     collect (cond
+               ((numberp nargs)
+                nargs)
+               ((string= nargs "?")
+                0)
+               ((string= nargs "*")
+                0)
+               ((string= nargs "+")
+                1))))
+
+(defun nargs-list-fill-lefter-* (nargs-list rest-num)
+  (loop for narg in nargs-list
+     with rest = rest-num
+     if (numberp narg)
+     collect narg
+     else
+     collect
+       (if (not (= rest 0))
+           (cond
+             ((string= narg "?")
+              (decf rest)
+              1)
+             ((string= narg "*")
+              (prog1
+                  rest
+                (setf rest 0)))
+             (t
+              (error "it might be a bag")))
+           (cond
+             ((string= narg "?") 0)
+             ((string= narg "*") 0)
+             (t
+              (error "it might be a bag"))))))
+
+(defun nargs-list-fill-lefter-+ (nargs-list rest-num)
+  (loop for narg in nargs-list
+     with rest = rest-num
+     if (numberp narg)
+     collect narg
+     else
+     collect
+       (cond
+         ((= rest 1)
+          (cond ((string= narg "?") 0)
+                ((string= narg "+") (setf rest 0) 1)
+                (t (error "it might be a bag"))))
+         ((= rest 0)
+          (cond ((string= narg "?") 0)
+                (t (error "it might be a bag"))))
+         (t
+          (cond
+            ((string= narg "?")
+             (decf rest)
+             1)
+            ((string= narg "+")
+             (prog1
+                 rest
+               (setf rest 0)))
+            (t
+             (error "it might be a bag")))))))
+
+(defun nargs-list-fill-? (nargs-list rest-num)
+  (loop for narg in nargs-list
+     with rest = rest-num
+     if (numberp narg)
+     collect narg
+     else
+     collect
+       (if (= rest 0)
+           0
+           (progn
+             (decf rest)
+             1))))
+
+(defmethod vararg-split-positional-arguments ((parser argument-parser) args)
+  (let ((indices (vararg-split-positional-arguments-indices parser args)))
+    (let ((start-index-list (loop for sum = 0 then (+ sum n)
+                               for n in indices
+                               collect sum)))
+      (loop for prev = 0 then i
+         for i in (cdr start-index-list)
+         collect (subseq args prev i)))))
+
+(defmethod vararg-split-positional-arguments-indices
+    ((parser argument-parser) args)
+  (let ((vararg-policy (vararg-policy parser args))
+        (narg-list (mapcar #'nargs (positional-arguments parser))))
+    (case vararg-policy
+      (:*
+       (let ((leftest-* (position "*" narg-list :test #'equal)))
+         (let ((right-filled-nargs-list
+                (nargs-list-fill-righter narg-list leftest-*)))
+           (let ((rest-num (- (length args)
+                              (length (remove-if-not
+                                       #'numberp right-filled-nargs-list)))))
+             (nargs-list-fill-lefter-* right-filled-nargs-list rest-num)))))
+      (:+
+       (let ((leftest-+ (position "+" narg-list :test #'equal)))
+         (let ((right-filled-nargs-list
+                (nargs-list-fill-righter narg-list leftest-+)))
+           (let ((rest-num (- (length args)
+                              (length (remove-if-not
+                                       #'numberp right-filled-nargs-list)))))
+             (nargs-list-fill-lefter-+ right-filled-nargs-list rest-num)))))
+      (:?                               ;only includes ?
+       (let ((rest-num (- (length args)
+                          (length (remove-if-not #'numberp narg-list)))))
+         (nargs-list-fill-? narg-list rest-num)))
+      (t
+       (error "it might be a bug")))))  ;??
+
+(defgeneric parse-positional-args (parser args parse-result &key namespace)
+  (:documentation
+   "parse the positional arguments and the result as multiple values of
+`parse-result' and the remaining args."))
+
+(defmethod parse-positional-args ((parser argument-parser)
+                                  args (parse-result hash-table)
+                                  &key (namespace nil))
+  (let ((splitted-args (split-positional-arguments parser args))
+        (positional-arguments (positional-arguments parser)))
+    (loop
+       for arg in positional-arguments
+       for target in splitted-args
+       do (action-argument arg target parse-result))
+    (values parse-result nil)))                           ;rest args?
+
 (defgeneric parse-args (parser &optional args &key namespace)
-  (:documentation "this is an implementation of ArgumentParser.parse_args. "))
+  (:documentation "this is an implementation of ArgumentParser.parse_args."))
 
 (defmethod parse-args ((parser argument-parser)
                        &optional (args (cdr (clap-sys:argv)))
                        &key (namespace nil))
   (let ((parse-result (make-parse-result-dict parser)))
     (handler-case
-        (prog1
-            (parse-args-rec parser args parse-result
-                            :namespace namespace :nonmatched-args nil)
-          (verificate-arguments parser parse-result))
+        (multiple-value-bind
+              (parse-result args)
+            (parse-optional-args-rec parser args parse-result
+                                     :namespace namespace
+                                     :nonmatched-args nil)
+          (multiple-value-bind
+                (parse-result args)
+              (parse-positional-args parser args parse-result
+                                     :namespace namespace)
+            (verificate-arguments parser parse-result)
+            (values (parsed-options parse-result) args)))
       (argparse-error
           (c)
         (print-usage parser)
