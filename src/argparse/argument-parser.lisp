@@ -321,9 +321,17 @@ to parse `arg'."))
                                                   (dest argument))))
       (case action
         (:store
-         (if (= nargs 1)
-             (setf value (car args))
-             (setf value args)))
+         (cond
+           ((numberp nargs)
+            (if (= nargs 1)
+                (setf value (car args))
+                (setf value args)))
+           ((string= nargs "?")
+            (setf value (car args)))
+           ((string= nargs "*")
+            (setf value args))
+           ((string= nargs "+")
+            (setf value args))))
         (:store-const
          ;; TODO: what happen if narg=2 and "store_const" are used
          ;;       in Python 2.7?
@@ -674,7 +682,6 @@ of options and the remaining arguments."))
                                     (nonmatched-args nil))
   (if (null args)
       (values parse-result (reverse nonmatched-args))
-      ;;(values (parsed-options parse-result) (reverse nonmatched-args))
       (let ((target-arg (car args))
             (rest-args (cdr args)))
         ;; first of all, parse optional argument
@@ -742,8 +749,6 @@ of options and the remaining arguments."))
                (let ((start-index-list (loop for sum = 0 then (+ sum n)
                                           for n in minarg-list
                                           collect sum)))
-                 (print start-index-list)
-                 (print args)
                  (loop for prev = 0 then i
                     for i in (append (cdr start-index-list)
                                      (list (length args)))
@@ -758,7 +763,7 @@ or NIL."))
 
 (defmethod vararg-policy ((parser argument-parser) args)
   (let ((positional-arguments (positional-arguments parser)))
-    (let ((narg-list (mapcar #'narg positional-arguments))
+    (let ((narg-list (mapcar #'nargs positional-arguments))
           (args-num (length args)))
       (let ((leftest-* (position "*" narg-list :test #'equal))
             (leftest-+ (position "*" narg-list :test #'equal))
@@ -876,7 +881,7 @@ or NIL."))
                                for n in indices
                                collect sum)))
       (loop for prev = 0 then i
-         for i in (cdr start-index-list)
+         for i in (append (cdr start-index-list) (list (length args)))
          collect (subseq args prev i)))))
 
 (defmethod vararg-split-positional-arguments-indices
@@ -920,6 +925,7 @@ or NIL."))
     (loop
        for arg in positional-arguments
        for target in splitted-args
+       if target
        do (action-argument arg target parse-result))
     (values parse-result nil)))                           ;rest args?
 
