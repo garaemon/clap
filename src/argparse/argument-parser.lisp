@@ -894,16 +894,16 @@ or NIL."))
          (let ((right-filled-nargs-list
                 (nargs-list-fill-righter narg-list leftest-*)))
            (let ((rest-num (- (length args)
-                              (length (remove-if-not
-                                       #'numberp right-filled-nargs-list)))))
+                              (apply #'+ (remove-if-not
+                                          #'numberp right-filled-nargs-list)))))
              (nargs-list-fill-lefter-* right-filled-nargs-list rest-num)))))
       (:+
        (let ((leftest-+ (position "+" narg-list :test #'equal)))
          (let ((right-filled-nargs-list
                 (nargs-list-fill-righter narg-list leftest-+)))
            (let ((rest-num (- (length args)
-                              (length (remove-if-not
-                                       #'numberp right-filled-nargs-list)))))
+                              (apply #'+ (remove-if-not
+                                          #'numberp right-filled-nargs-list)))))
              (nargs-list-fill-lefter-+ right-filled-nargs-list rest-num)))))
       (:?                               ;only includes ?
        (let ((rest-num (- (length args)
