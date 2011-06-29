@@ -507,7 +507,7 @@ generated automatically"))
   (with-slots (metavar nargs) argument
     (cond
       ((numberp nargs)
-       (error "not implemented yet"))
+       (clap-builtin:join " " (make-list nargs :initial-element metavar)))
       ((string= nargs "?")
        (error "not implemented yet"))
       ((string= nargs "*")
@@ -712,7 +712,7 @@ of options and the remaining arguments."))
           ((numberp nargs)
            nil)
           ((string= nargs "+")
-           (if (null (clap-builtin:lookup result arg))
+           (if (null (clap-builtin:lookup result (dest arg)))
                (error 'too-few-arguments)))
           ;; TODO: required flag
           (t

@@ -65,3 +65,10 @@
   (describe (clap-argparse:parse-args parser '("AA" "CC")))
   (describe (clap-argparse:parse-args parser '("AA" "BB" "CC")))
   (describe (clap-argparse:parse-args parser '("AA" "BB1" "BB2" "BB3" "CC"))))
+
+(let ((parser (make-instance 'clap-argparse:argument-parser)))
+  (clap-argparse:add-argument parser "A")
+  (clap-argparse:add-argument parser "B" :nargs "+")
+  (clap-argparse:add-argument parser "C")
+  (describe (clap-argparse:parse-args parser '("AA" "BB" "CC")))
+  (describe (clap-argparse:parse-args parser '("AA" "BB1" "BB2" "BB3" "CC"))))
