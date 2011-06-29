@@ -240,7 +240,7 @@ set `metavar' slot of the argument."))
     (ensure-dest arg parser)
     (ensure-nargs arg)
     (ensure-metavar arg parser)
-    (setf (arguments parser) (cons arg (arguments parser)))
+    (setf (arguments parser) (append (arguments parser) (list arg)))
     arg))
 
 (defgeneric verificate-argument-name (parser name-or-flags)

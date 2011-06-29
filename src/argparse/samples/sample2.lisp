@@ -43,5 +43,12 @@
     (describe (clap-argparse:parse-args
                bar-parser
                (clap-builtin:split "--parent 2 --bar YYY")))))
-    
+
+;; ?, *, +
+(let ((parser (make-instance 'clap-argparse:argument-parser)))
+  (clap-argparse:add-argument parser "A")
+  (clap-argparse:add-argument parser "B")
+  (clap-argparse:add-argument parser "C")
+  (describe (clap-argparse:parse-args parser '("AA" "BB" "CC")))
+  )
   
