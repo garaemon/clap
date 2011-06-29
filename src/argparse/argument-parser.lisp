@@ -766,7 +766,7 @@ or NIL."))
     (let ((narg-list (mapcar #'nargs positional-arguments))
           (args-num (length args)))
       (let ((leftest-* (position "*" narg-list :test #'equal))
-            (leftest-+ (position "*" narg-list :test #'equal))
+            (leftest-+ (position "+" narg-list :test #'equal))
             (leftest-? (position "?" narg-list :test #'equal)))
         (cond
           ((and leftest-* leftest-+)
