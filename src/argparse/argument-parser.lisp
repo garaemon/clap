@@ -364,7 +364,7 @@ if the type is nil, no conversion is accompleshed."))
            (eq type 'open))
        (open val))
       ((typep type 'file-type)
-       ;; todo: conversion from python like mode spec: "r", "w", ...
+       ;; TODO: conversion from python like mode spec: "r", "w", ...
        (open val :direction (mode type)))
       ((functionp type)                 ;support lambda
        (funcall type val))
