@@ -106,19 +106,27 @@ if the :store-const or :append-const option is specified or `narg' is \"?\".")
             :accessor default
             :documentation "the default value of the option (or argument)")
    (type :initarg :type :initform nil
-         :accessor type)
+         :accessor type
+         :documentation "convert the `argument' to the type specified
+by `type'")
    (choices :initarg :choices :initform nil
             :accessor choices)
    (required :initarg :required :initform nil
              :accessor required)
    (help :initarg :help :initform nil
-         :accessor help)
+         :accessor help
+         :documentation "help string of the argument.")
    (metavar :initarg :metavar :initform nil
-            :accessor metavar)
+            :accessor metavar
+            :documentation "`metavar' will be used for usage and help to
+show the parameters of the argument.")
    (dest :initarg :dest :initform nil
-         :accessor dest)
+         :accessor dest
+         :documentation "`dest' is the symbol which the values of
+the argument will be sotred in.")
    (version :initarg :version :initform nil
-            :accessor version))
+            :accessor version
+            :documentation "a string to represent the version of the program."))
   (:documentation
    "this is a class to represent an argument or an optional."))
 
@@ -407,6 +415,7 @@ the arguments which should be processed afterwards."))
   (clap-sys:exit 0))
 
 (defun replace-prog (str prog)
+  "replace '%(prog)s in `str' to `prog''"
   (clap-builtin:replace str "%(prog)s" prog))
 
 (defgeneric print-usage (parser)
@@ -451,6 +460,8 @@ generated automatically"))
    #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
 
 (defun argument-format (metavar nargs)
+  "return the string to show the parameters of the argument
+according to `nargs' and `metavar'."
   (cond
     ((numberp nargs)
      (if (= nargs 0)
@@ -663,7 +674,6 @@ ths slots and thir values are defined by the `arguments' of parser."))
 multiple values of a anonymous class instance to represent options and the list
 of remained arguments."))
 
-;; implementingx
 (defmethod parsed-options ((parse-result hash-table))
   (let ((class (make-class-from-options parse-result)))
     (dolist (arg (clap-builtin:items parse-result))
@@ -737,6 +747,10 @@ of options and the remaining arguments."))
      0)
     ((string= nargs "+")
      1)))
+
+(defgeneric split-positional-arguments (parser args)
+  (:documentation "return the splitted list of `args' according to
+the arguments of `parser'."))
 
 (defmethod split-positional-arguments ((parser argument-parser) args)
   (let ((positional-arguments (positional-arguments parser)))
@@ -812,6 +826,7 @@ or NIL."))
                 1))))
 
 (defun nargs-list-fill-lefter-* (nargs-list rest-num)
+  "fill the list of nargs which has * in the most left position."
   (loop for narg in nargs-list
      with rest = rest-num
      if (numberp narg)
@@ -836,6 +851,7 @@ or NIL."))
               (error "it might be a bag"))))))
 
 (defun nargs-list-fill-lefter-+ (nargs-list rest-num)
+  "fill the list of nargs which has + in the most left position."
   (loop for narg in nargs-list
      with rest = rest-num
      if (numberp narg)
@@ -863,6 +879,7 @@ or NIL."))
              (error "it might be a bag")))))))
 
 (defun nargs-list-fill-? (nargs-list rest-num)
+  "fill the list of nargs which has ?s in itself."
   (loop for narg in nargs-list
      with rest = rest-num
      if (numberp narg)
@@ -875,6 +892,11 @@ or NIL."))
              (decf rest)
              1))))
 
+(defgeneric vararg-split-positional-arguments (parser args)
+  (:documentation
+   "split `args' according to the definitions of the arguments of `parser'.
+`args' is required to be parsed as vararg."))
+
 (defmethod vararg-split-positional-arguments ((parser argument-parser) args)
   (let ((indices (vararg-split-positional-arguments-indices parser args)))
     (let ((start-index-list (loop for sum = 0 then (+ sum n)
@@ -883,6 +905,11 @@ or NIL."))
       (loop for prev = 0 then i
          for i in (append (cdr start-index-list) (list (length args)))
          collect (subseq args prev i)))))
+
+(defgeneric vararg-split-positional-arguments-indices (parser args)
+  (:documentation
+   "return the list which consists of the number of the parameters
+of the arguments."))
 
 (defmethod vararg-split-positional-arguments-indices
     ((parser argument-parser) args)
