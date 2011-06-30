@@ -348,8 +348,8 @@ to parse `arg'."))
              (if (= nargs 1)
                  (setf value (append value args))
                  (setf value (append value (list args))))))
-        (:append-const                      ;TODO: const is not supported
-         (error "not implemented yet"))
+        (:append-const
+         (setf value (append value (list const))))
         (:version
          (format t version)
          (clap-sys:exit 0))))))
