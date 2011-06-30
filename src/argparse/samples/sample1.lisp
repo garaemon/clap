@@ -5,7 +5,7 @@
                                :description "Process some integers.")))
     (clap-argparse:add-argument parser "integers"
                                 :metavar "N"
-                                :type 'int
+                                :type :integer
                                 :nargs "+"
                                 :help "an integer for the accumulator")
     (clap-argparse:add-argument parser "--sum"

@@ -135,6 +135,15 @@ the argument will be sotred in.")
   (:documentation
    "this is a special class to represent -h or --help option."))
 
+(defclass file-type ()
+  ((mode :initarg :mode :initform :input
+         :accessor mode
+         :documentation "mode of the file system."))
+  (:documentation
+   "this is an implementation of argparse.FileType.
+we don't support buffer size specification because it is not support
+by CL open function."))
+
 (defgeneric make-help-argument (parser)
   (:documentation
    "make a help-argument instance using `argument-parser'."))
@@ -226,6 +235,16 @@ set `metavar' slot of the argument."))
           (error "you have already use ~A option" name-or-flag))))
   t)
 
+(defgeneric ensure-version (arg parser)
+  (:documentation
+   "replace %(prog)s in version with prog of parser"))
+
+(defmethod ensure-version ((arg argument)
+                           (parser argument-parser))
+  (if (version arg)
+      (setf (version arg)
+            (replace-prog (version arg) (prog parser)))))
+
 (defgeneric add-argument (parser name-or-flags
                           &key
                           action nargs const
@@ -247,6 +266,7 @@ set `metavar' slot of the argument."))
     (verificate-duplicate-arguments parser name-or-flags)
     (ensure-dest arg parser)
     (ensure-nargs arg)
+    (ensure-version arg parser)
     (ensure-metavar arg parser)
     (setf (arguments parser) (append (arguments parser) (list arg)))
     arg))
@@ -318,6 +338,38 @@ to parse `arg'."))
              (return-from find-match-optional-argument argument)))))
   nil)
 
+(defgeneric convert-type (argument val)
+  (:documentation
+   "convert `val' to the type specified by the argument.
+if the type is nil, no conversion is accompleshed."))
+
+(defmethod convert-type ((argument argument) val)
+  (with-slots (type) argument
+    (cond
+      ((null type) val)
+      ((or (eq type :integer)
+           (eq type :int)
+           (eq type 'integer)
+           (eq type 'int))
+       (clap-builtin:int val))
+      ((or (eq type :float)
+           (eq type 'float))
+       (coerce (read-from-string val) 'float))
+      ((or (eq type :string)
+           (eq type :str)
+           (eq type 'string)
+           (eq type 'str))
+       val)
+      ((or (eq type :open)
+           (eq type 'open))
+       (open val))
+      ((typep type 'file-type)
+       ;; todo: conversion from python like mode spec: "r", "w", ...
+       (open val :direction (mode type)))
+      ((functionp type)                 ;support lambda
+       (funcall type val))
+      )))
+
 (defgeneric action-argument (argument args parse-result)
   (:documentation "this method will process `args' according to the
 `action' of `argument'. the supported `action' are :store, :store-const,
@@ -332,14 +384,16 @@ to parse `arg'."))
          (cond
            ((numberp nargs)
             (if (= nargs 1)
-                (setf value (car args))
-                (setf value args)))
+                (setf value (convert-type argument (car args)))
+                (setf value (mapcar #'(lambda (x) (convert-type argument x))
+                                    args))))
            ((string= nargs "?")
-            (setf value (car args)))
+            (setf value (convert-type argument (car args))))
            ((string= nargs "*")
-            (setf value args))
+            (setf value (mapcar #'(lambda (x) (convert-type argument x)) args)))
            ((string= nargs "+")
-            (setf value args))))
+            (setf value (mapcar #'(lambda (x) (convert-type argument x))
+                                args)))))
         (:store-const
          ;; TODO: what happen if narg=2 and "store_const" are used
          ;;       in Python 2.7?
@@ -351,15 +405,17 @@ to parse `arg'."))
         (:append
          (if (null value)
              (if (= nargs 1)
-                 (setf value args)
-                 (setf value (list args)))
+                 (setf value (convert-type argument args))
+                 (setf value (list (convert-type argument args)))))
              (if (= nargs 1)
-                 (setf value (append value args))
-                 (setf value (append value (list args))))))
+                 (setf value (append args (convert-type argument value)))
+                 (setf value (append value
+                                     (list (convert-type argument args))))))
         (:append-const
          (setf value (append value (list const))))
         (:version
-         (format t version)
+         (write-string version)
+         (terpri)
          (clap-sys:exit 0))))))
 
 (defgeneric process-argument (parser argument parse-result target-arg rest-args)
