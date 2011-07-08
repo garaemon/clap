@@ -438,7 +438,9 @@ the arguments which should be processed afterwards."))
          (action-argument argument (subseq rest-args 0 nargs) parse-result)
          next-rest-args))
       ((string= nargs "?")
-       (error "not implemented yet"))
+       (let ((next-rest-args (cdr rest-args)))
+         (action-argument argument (car rest-args) parse-result)
+         next-rest-args))
       ((string= nargs "*")
        ;; until find optional argument
        (with-slots (prefix) parser
@@ -475,8 +477,12 @@ the arguments which should be processed afterwards."))
   (clap-sys:exit 0))
 
 (defun replace-prog (str prog)
-  "replace '%(prog)s in `str' to `prog''"
+  "replace %(prog)s in `str' to `prog'."
   (clap-builtin:replace str "%(prog)s" prog))
+
+(defun replace-default (str default)
+  "replace %(default)s in `str' to `default'."
+  (clap-builtin:replace str "%(default)s" (format nil "~A" default)))
 
 (defgeneric print-usage (parser)
   (:documentation
@@ -580,7 +586,7 @@ according to `nargs' and `metavar'."
       ((numberp nargs)
        (clap-builtin:join " " (make-list nargs :initial-element metavar)))
       ((string= nargs "?")
-       (error "not implemented yet"))
+       (format nil "[~A]" metavar))
       ((string= nargs "*")
        (format nil "[~A ...]" metavar))
       ((string= nargs "+")
@@ -615,16 +621,19 @@ according to `nargs' and `metavar'."
 (defmethod print-positional-argument-help ((arg argument)
                                            (parser argument-parser)
                                            offset)
-  (with-slots (metavar help) arg
-    (let ((help-str (concatenate 'string
-                                 "  " metavar
-                                 (coerce (make-list
-                                          (- offset (length metavar))
-                                          :initial-element #\ )
-                                         'string)
-                                 help)))
-      (write-string help-str)
-      (terpri))))
+  (with-slots (metavar help default) arg
+    (with-slots (prog) parser
+      (let ((help-str (concatenate 'string
+                                   "  " metavar
+                                   (coerce (make-list
+                                            (- offset (length metavar))
+                                            :initial-element #\ )
+                                           'string)
+                                   (replace-default
+                                    (replace-prog help prog)
+                                    default))))
+        (write-string help-str)
+        (terpri)))))
 
 (defgeneric print-optional-argument-help (arg parser offset)
   (:documentation
@@ -633,24 +642,26 @@ according to `nargs' and `metavar'."
 (defmethod print-optional-argument-help ((arg argument)
                                          (parser argument-parser)
                                          offset)
-  (with-slots (metavar help nargs) arg
+  (with-slots (metavar help nargs default) arg
     (let ((option-str (clap-builtin:join ", " (flags arg)))
           (argument-str (argument-format metavar nargs)))
-      (let ((help-str (concatenate 'string
-                                   "  "
-                                   option-str
-                                   " "
-                                   argument-str
-                                   (coerce
-                                    (make-list (max (- offset
-                                                       (+ (length option-str)
-                                                          (length argument-str)
-                                                          1))
-                                                    2)
-                                               :initial-element #\ )
-                                    'string)
-                                   help)))
-        (write-string help-str) (terpri)))))
+      (with-slots (prog) parser
+        (let ((help-str (concatenate 'string
+                                     "  "
+                                     option-str
+                                     " "
+                                     argument-str
+                                     (coerce
+                                      (make-list (max (- offset
+                                                         (+ (length option-str)
+                                                            (length argument-str)
+                                                            1))
+                                                      2)
+                                                 :initial-element #\ )
+                                      'string)
+                                     (replace-default (replace-prog help prog)
+                                                      default))))
+          (write-string help-str) (terpri))))))
 
 (defgeneric print-positional-arguments (parser offset)
   (:documentation
