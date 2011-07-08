@@ -397,7 +397,9 @@ if the type is nil, no conversion is accompleshed."))
          ;; verificate :choices
          (if (and choices
                   (not (member value choices :test #'equal)))
-             (error 'invalid-choice)))
+             (error 'invalid-choice :argument (or (name argument)
+                                                  (car (flags argument)))
+                    :value value :choices choices)))
         (:store-const
          (setf value const))
         ((:store-true :store-t)

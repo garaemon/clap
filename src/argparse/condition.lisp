@@ -22,9 +22,17 @@ few arguments."))
 conversion."))
 
 (define-condition invalid-choice (argparse-error)
-  ()
+  ((argument :initarg :argument
+             :accessor invalid-choice-argument)
+   (value :initarg :value
+          :accessor invalid-choice-value)
+   (choices :initarg :choices
+            :accessor invalid-choice-choices))
   (:report
    (lambda (c s)
-     (format s "invalid choice")))
+     (format s "argument ~A: invalid choice: ~A (choose from ~A)"
+             (invalid-choice-argument c)
+             (invalid-choice-value c)
+             (invalid-choice-choices c))))
   (:documentation
    "a condition to be reporeted if the arguments are not included in :choices"))
