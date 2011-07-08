@@ -392,11 +392,9 @@ if the type is nil, no conversion is accompleshed."))
            ((string= nargs "*")
             (setf value (mapcar #'(lambda (x) (convert-type argument x)) args)))
            ((string= nargs "+")
-            (setf value (mapcar #'(lambda (x) (convert-type argument x))
-                                args))))
+            (setf value (mapcar #'(lambda (x) (convert-type argument x)) args))))
          ;; verificate :choices
-         (if (and choices
-                  (not (member value choices :test #'equal)))
+         (if (and choices (not (member value choices :test #'equal)))
              (error 'invalid-choice :argument (or (name argument)
                                                   (car (flags argument)))
                     :value value :choices choices)))
@@ -415,8 +413,7 @@ if the type is nil, no conversion is accompleshed."))
                  (setf value (append args (convert-type argument value)))
                  (setf value (append value
                                      (list (convert-type argument args))))))
-         (if (and choices
-                  (not (member value choices :test #'equal)))
+         (if (and choices (not (member value choices :test #'equal)))
              (error 'invalid-choice)))
         (:append-const
          (setf value (append value (list const))))
@@ -780,16 +777,16 @@ of options and the remaining arguments."))
 (defmethod verificate-arguments ((parser argument-parser) (result hash-table))
   (with-slots (arguments) parser
     (dolist (arg arguments)
-      (with-slots (nargs) arg
-        (cond
-          ((numberp nargs)
-           nil)
+      (with-slots (flags nargs required) arg
+        (cond                           ;verificate nargs
+          ((numberp nargs) nil)
           ((string= nargs "+")
            (if (null (clap-builtin:lookup result (dest arg)))
                (error 'too-few-arguments)))
-          ;; TODO: required flag
-          (t
-           nil))))))
+          (t nil))
+        (if (and flags required
+                 (null (clap-builtin:lookup result (dest arg))))
+            (error 'required-option :option (car flags)))))))
 
 (defun minimum-args-num (positional-arguments)
   "return sum of the minimum number of arguments"

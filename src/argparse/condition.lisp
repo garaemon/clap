@@ -36,3 +36,13 @@ conversion."))
              (invalid-choice-choices c))))
   (:documentation
    "a condition to be reporeted if the arguments are not included in :choices"))
+
+(define-condition required-option (argparse-error)
+  ((option :initarg :option
+           :accessor required-option-option))
+  (:report
+   (lambda (c s)
+     (format s "option ~A is required" (required-option-option c))))
+  (:documentation
+   "a condition to be reported if the arguments is not specified though
+:require is true"))
