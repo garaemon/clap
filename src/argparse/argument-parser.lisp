@@ -376,7 +376,7 @@ if the type is nil, no conversion is accompleshed."))
 :store-true, :store-false, :append, :append-const, :version and lambda form."))
 
 (defmethod action-argument ((argument argument) args parse-result)
-  (with-slots (action nargs const version) argument
+  (with-slots (choices action nargs const version) argument
     (symbol-macrolet ((value (clap-builtin:lookup parse-result
                                                   (dest argument))))
       (case action
@@ -393,10 +393,12 @@ if the type is nil, no conversion is accompleshed."))
             (setf value (mapcar #'(lambda (x) (convert-type argument x)) args)))
            ((string= nargs "+")
             (setf value (mapcar #'(lambda (x) (convert-type argument x))
-                                args)))))
+                                args))))
+         ;; verificate :choices
+         (if (and choices
+                  (not (member value choices :test #'equal)))
+             (error 'invalid-choice)))
         (:store-const
-         ;; TODO: what happen if narg=2 and "store_const" are used
-         ;;       in Python 2.7?
          (setf value const))
         ((:store-true :store-t)
          (setf value t))
@@ -406,11 +408,14 @@ if the type is nil, no conversion is accompleshed."))
          (if (null value)
              (if (= nargs 1)
                  (setf value (convert-type argument args))
-                 (setf value (list (convert-type argument args)))))
+                 (setf value (list (convert-type argument args))))
              (if (= nargs 1)
                  (setf value (append args (convert-type argument value)))
                  (setf value (append value
                                      (list (convert-type argument args))))))
+         (if (and choices
+                  (not (member value choices :test #'equal)))
+             (error 'invalid-choice)))
         (:append-const
          (setf value (append value (list const))))
         (:version

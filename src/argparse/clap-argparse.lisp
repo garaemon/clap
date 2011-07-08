@@ -7,5 +7,6 @@
            #:add-argument
            #:parse-args
            #:namespace
-           #:print-help)
+           #:print-help
+           #:argument-type-error)
   )

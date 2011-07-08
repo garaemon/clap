@@ -14,3 +14,17 @@ class reports."))
   (:documentation
    "this is a condition which will be reported if there are too
 few arguments."))
+
+(define-condition argument-type-error (argparse-error)
+  ()
+  (:documentation
+   "a condition to be reporeted if there is an error cousing from type
+conversion."))
+
+(define-condition invalid-choice (argparse-error)
+  ()
+  (:report
+   (lambda (c s)
+     (format s "invalid choice")))
+  (:documentation
+   "a condition to be reporeted if the arguments are not included in :choices"))
