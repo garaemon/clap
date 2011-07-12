@@ -11,5 +11,9 @@
   (describe (clap-argparse:parse-args parser (clap-builtin:split "--foo 1 -y 2"))))
 
 (let ((parser (make-instance 'clap-argparse:argument-parser)))
+  (clap-argparse:add-argument parser "--foo" :dest 'bar)
+  (describe (clap-argparse:parse-args parser (clap-builtin:split "--foo XXX"))))
+
+(let ((parser (make-instance 'clap-argparse:argument-parser)))
   (clap-argparse:add-argument parser "--foo" :dest "bar")
   (describe (clap-argparse:parse-args parser (clap-builtin:split "--foo XXX"))))
