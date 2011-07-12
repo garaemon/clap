@@ -113,7 +113,7 @@ by `type'")
             :accessor choices)
    (required :initarg :required :initform nil
              :accessor required)
-   (help :initarg :help :initform nil
+   (help :initarg :help :initform ""
          :accessor help
          :documentation "help string of the argument.")
    (metavar :initarg :metavar :initform nil
@@ -172,10 +172,16 @@ by CL open function."))
   (when (null (dest arg))
     (if (name arg)
         (setf (dest arg) (read-from-string (name arg)))
-        (setf (dest arg)
-              (read-from-string (clap-builtin:lstrip
-                                 (car (flags arg))
-                                 (prefix-chars parser))))))
+        (let ((long-option (find-if #'(lambda (x)
+                                        (long-option-p parser x))
+                                    (flags arg))))
+          (if long-option
+              (setf (dest arg)
+                    (read-from-string (clap-builtin:lstrip
+                                       long-option (prefix-chars parser))))
+              (setf (dest arg)
+                    (read-from-string (clap-builtin:lstrip
+                                       (car (flags arg)) (prefix-chars parser))))))))
   arg)
 
 (defgeneric ensure-metavar (arg parser)
@@ -257,7 +263,7 @@ set `metavar' slot of the argument."))
                          &key
                          (action :store) (nargs 1) (const nil)
                          (default nil) (type nil) (choices nil) (version nil)
-                         (required nil) (help nil) (metavar nil) (dest nil))
+                         (required nil) (help "") (metavar nil) (dest nil))
   (let ((arg (make-argument parser name-or-flags
                             :action action :nargs nargs :const const
                             :default default :type type :choices choices
@@ -533,7 +539,11 @@ according to `nargs' and `metavar'."
      (if (= nargs 0)
          ""
          (clap-builtin:join " "
-                            (make-list nargs :initial-element metavar))))
+                            (if (and (listp metavar)
+                                     (= (length metavar) nargs))
+                                metavar ;error check required?
+                                (make-list nargs
+                                           :initial-element metavar)))))
     ((string= nargs "*")
      (format nil "[~A [~A ...]]" metavar metavar)) ; [U [U ...]]
     ((string= nargs "+")
@@ -1027,12 +1037,12 @@ of the arguments."))
        do (action-argument arg target parse-result))
     (values parse-result nil)))                           ;rest args?
 
-(defgeneric parse-args (parser &optional args &key namespace)
+(defgeneric parse-args (parser &optional args namespace)
   (:documentation "this is an implementation of ArgumentParser.parse_args."))
 
 (defmethod parse-args ((parser argument-parser)
                        &optional (args (cdr (clap-sys:argv)))
-                       &key (namespace nil))
+                       (namespace nil))
   (let ((parse-result (make-parse-result-dict parser)))
     (handler-case
         (multiple-value-bind
