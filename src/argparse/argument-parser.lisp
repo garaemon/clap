@@ -169,19 +169,22 @@ by CL open function."))
 `dest' slot of the argument."))
 
 (defmethod ensure-dest ((arg argument) (parser argument-parser))
-  (when (null (dest arg))
-    (if (name arg)
-        (setf (dest arg) (read-from-string (name arg)))
-        (let ((long-option (find-if #'(lambda (x)
-                                        (long-option-p parser x))
-                                    (flags arg))))
-          (if long-option
-              (setf (dest arg)
-                    (read-from-string (clap-builtin:lstrip
-                                       long-option (prefix-chars parser))))
-              (setf (dest arg)
-                    (read-from-string (clap-builtin:lstrip
-                                       (car (flags arg)) (prefix-chars parser))))))))
+  (cond
+    ((null (dest arg))
+     (if (name arg)
+         (setf (dest arg) (read-from-string (name arg)))
+         (let ((long-option (find-if #'(lambda (x)
+                                         (long-option-p parser x))
+                                     (flags arg))))
+           (if long-option
+               (setf (dest arg)
+                     (read-from-string (clap-builtin:lstrip
+                                        long-option (prefix-chars parser))))
+               (setf (dest arg)
+                     (read-from-string (clap-builtin:lstrip
+                                        (car (flags arg)) (prefix-chars parser))))))))
+    ((stringp (dest arg))
+     (setf (dest arg) (read-from-string (dest arg)))))
   arg)
 
 (defgeneric ensure-metavar (arg parser)
