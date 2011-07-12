@@ -46,3 +46,13 @@ conversion."))
   (:documentation
    "a condition to be reported if the arguments is not specified though
 :require is true"))
+
+(define-condition unrecognized-arguments (argparse-error)
+  ((args :initarg :args
+         :accessor unrecognized-arguments-args))
+  (:report
+   (lambda (c s)
+     (format s "unrecognized arguments: ~{~A~^ ~}"
+             (unrecognized-arguments-args c))))
+  (:documentation
+   "a condition to be reported if the arguments cant be recognized"))

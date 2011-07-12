@@ -1058,7 +1058,9 @@ of the arguments."))
               (parse-positional-args parser args parse-result
                                      :namespace namespace)
             (verificate-arguments parser parse-result)
-            (values (parsed-options parse-result) args)))
+            (if args
+                (error 'unrecognized-arguments :args args))
+            (parsed-options parse-result)))
       (argparse-error
           (c)
         (print-usage parser)
