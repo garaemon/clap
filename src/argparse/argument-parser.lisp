@@ -338,13 +338,25 @@ to parse `arg'."))
   (dolist (argument (optional-arguments parser))
     (dolist (flag (flags argument))
       (cond ((and (long-option-p parser flag)
-                  (= (clap-builtin:find arg "=") 1))
+                  (not (= (clap-builtin:find arg "=") -1)))
+             ;; option like --foo=1
              (multiple-value-bind (before partitioner after)
                  (clap-builtin:partition arg "=")
                (if (string= before flag)
-                   (return-from find-match-optional-argument argument))))
+                   (return-from find-match-optional-argument
+                     (values argument :long-equal)))))
+            ;; option like --foo 1, -a 1 
+            ;; if the option requires some arguments, they are separated
+            ;; with a couple of whitespace
             ((string= flag arg)
-             (return-from find-match-optional-argument argument)))))
+             (return-from find-match-optional-argument
+               (values argument :simple))))))
+  (dolist (argument (optional-arguments parser))
+    (dolist (flag (flags argument))
+      ;; option like -a1 or -ab
+      (if (clap-builtin:startswith arg flag)
+          (return-from find-match-optional-argument
+            (values argument :continuous)))))
   nil)
 
 (defgeneric convert-type (argument val)
@@ -431,56 +443,66 @@ if the type is nil, no conversion is accompleshed."))
          (terpri)
          (clap-sys:exit 0))))))
 
-(defgeneric process-argument (parser argument parse-result target-arg rest-args)
+(defgeneric process-argument (parser argument parse-result target-arg rest-args
+                              &optional spec)
   (:documentation "this method will call `action-argument' and return
 the arguments which should be processed afterwards."))
 
 (defmethod process-argument ((parser argument-parser) (argument argument)
                              parse-result
-                             target-arg rest-args)
-  ;; TODO: 'name' argument is not supported yet
-  (with-slots (flags nargs) argument
-    ;; TODO: support ?
-    (cond
-      ((numberp nargs)
-       (let ((next-rest-args (subseq rest-args nargs)))
-         (action-argument argument (subseq rest-args 0 nargs) parse-result)
-         next-rest-args))
-      ((string= nargs "?")
-       (let ((next-rest-args (cdr rest-args)))
-         (action-argument argument (car rest-args) parse-result)
-         next-rest-args))
-      ((string= nargs "*")
-       ;; until find optional argument
-       (with-slots (prefix) parser
-         (let ((arg-num (loop
-                           for arg in rest-args
-                           for i from 0
-                           until (clap-builtin:startswith arg prefix)
-                           finally (return i))))
-           (let ((next-rest-args (subseq rest-args arg-num)))
-             (action-argument argument (subseq rest-args 0 arg-num)
-                              parse-result)
-             next-rest-args))))
-      ((string= nargs "+")
-       (with-slots (prefix) parser
-         (let ((arg-num (loop
-                           for arg in rest-args
-                           for i from 0
-                           until (clap-builtin:startswith arg prefix)
-                           finally (return i))))
-           (if (= arg-num 0)
-               (error 'too-few-arguments))
-           (let ((next-rest-args (subseq rest-args arg-num)))
-             (action-argument argument (subseq rest-args 0 arg-num)
-                              parse-result)
-             next-rest-args))))
-       )))
+                             target-arg rest-args
+                             &optional (spec :simple))
+  ;; spec is one of :simple, :long-equal or :continuous
+  (if (eq spec :long-equal)
+      (multiple-value-bind (before partitioner after)
+          (clap-builtin:partition target-arg "=")
+        (process-argument parser argument
+                          parse-result
+                          before
+                          (cons after rest-args)))
+      (with-slots (flags nargs) argument
+        (cond
+          ((numberp nargs)
+           (let ((next-rest-args (subseq rest-args nargs)))
+             (action-argument argument (subseq rest-args 0 nargs) parse-result)
+             next-rest-args))
+          ((string= nargs "?")
+           (let ((next-rest-args (cdr rest-args)))
+             (action-argument argument (car rest-args) parse-result)
+             next-rest-args))
+          ((string= nargs "*")
+           ;; until find optional argument
+           (with-slots (prefix) parser
+             (let ((arg-num (loop
+                               for arg in rest-args
+                               for i from 0
+                               until (clap-builtin:startswith arg prefix)
+                               finally (return i))))
+               (let ((next-rest-args (subseq rest-args arg-num)))
+                 (action-argument argument (subseq rest-args 0 arg-num)
+                                  parse-result)
+                 next-rest-args))))
+          ((string= nargs "+")
+           (with-slots (prefix) parser
+             (let ((arg-num (loop
+                               for arg in rest-args
+                               for i from 0
+                               until (clap-builtin:startswith arg prefix)
+                               finally (return i))))
+               (if (= arg-num 0)
+                   (error 'too-few-arguments))
+               (let ((next-rest-args (subseq rest-args arg-num)))
+                 (action-argument argument (subseq rest-args 0 arg-num)
+                                  parse-result)
+                 next-rest-args))))
+          ))))
 
 (defmethod process-argument ((parser argument-parser)
                              (argument help-argument)
                              parse-result
-                             target-arg rest-args)
+                             target-arg rest-args
+                             &optional spec)
+  (declare (ignore spec))
   ;; just print the help and exit from it
   (print-help parser)
   (clap-sys:exit 0))
@@ -778,14 +800,16 @@ of options and the remaining arguments."))
       (values parse-result (reverse nonmatched-args))
       (let ((target-arg (car args))
             (rest-args (cdr args)))
-        ;; first of all, parse optional argument
-        (let ((match-argument (find-match-optional-argument
-                               parser target-arg parse-result)))
+        (multiple-value-bind
+              (match-argument spec)
+            (find-match-optional-argument
+             parser target-arg parse-result)
           (if match-argument
               (parse-optional-args-rec parser
                               (process-argument parser match-argument
                                                 parse-result
-                                                target-arg rest-args)
+                                                target-arg rest-args
+                                                spec)
                               parse-result
                               :namespace namespace
                               :nonmatched-args nonmatched-args)
