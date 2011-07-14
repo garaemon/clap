@@ -56,3 +56,17 @@ conversion."))
              (unrecognized-arguments-args c))))
   (:documentation
    "a condition to be reported if the arguments cant be recognized"))
+
+(define-condition n-expected-arguments (argparse-error)
+  ((num :initarg :num
+        :accessor n-expected-arguments-num)
+   (argument :initarg :argument
+             :accessor n-expected-arguments-argument))
+  (:report
+   (lambda (c s)
+     (format s "argument ~A: expected ~A argument(s)"
+             (n-expected-arguments c)
+             (n-expected-arguments-argument c))))
+  (:documentation
+   "a condition to be reported if the arguments did not satisfy the
+number of the parameters"))

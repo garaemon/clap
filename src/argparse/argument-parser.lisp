@@ -28,7 +28,7 @@ defaults to T")
                      :initform nil
                      :documentation
                      "the default value of the arguments. defaults to nil.")
-   (parents :accessor parents           ;??
+   (parents :accessor parents
             :initarg :parents
             :initform nil
             :documentation "a list of argument-parser instances.")
@@ -221,9 +221,13 @@ set `metavar' slot of the argument."))
 (defmethod ensure-nargs ((arg argument))
   (with-slots (action nargs) arg
     (cond
-      ((eq action :store-const)
-       (setf nargs 0))
-      ))
+      ((or (eq action :store-const)
+           (eq action :store-true)
+           (eq action :store-t)
+           (eq action :store-false)
+           (eq action :store-nil)
+           (eq action :append-const))
+       (setf nargs 0))))
   arg)
 
 (defgeneric verificate-duplicate-arguments (parser name-or-flags)
@@ -443,6 +447,52 @@ if the type is nil, no conversion is accompleshed."))
          (terpri)
          (clap-sys:exit 0))))))
 
+(defun count-vararg-num (rest-args prefix)
+  "return the number of argument until find the string which
+starts with `prefix'"
+  (loop
+     for arg in rest-args
+     for i from 0
+     until (clap-builtin:startswith arg prefix)
+     finally (return i)))
+
+(defun string-to-list (string)
+  "convert string into a list of string like:
+
+\"aa\" -> '(\"a\" \"a\")"
+  (mapcar #'(lambda (c) (format nil "~c" c)) (coerce string 'string)))
+
+(defgeneric split-continuous-optional-arguments
+    (parser argument target-arg)
+  (:documentation
+   "split a continuous optional argument such as -ab according to
+nargs of argument. it returns multiple values of (splitted-list rest-arg)"))
+
+(defmethod split-continuous-optional-arguments 
+    ((parser argument-parser) (argument argument) target-arg)
+  (with-slots (prefix-chars) parser
+    (with-slots (nargs) argument
+      ;; -abc -> -a
+      (let ((optional-argument (subseq target-arg 0 (1+ (length prefix-chars)))))
+        (cond ((numberp nargs)          ; nargs must be 0 or 1
+               (cond
+                 ((= nargs 0)
+                  (values (list optional-argument)
+                          (concatenate 'string prefix-chars
+                                       (subseq target-arg
+                                               (1+ (length prefix-chars))))))
+                 ((= nargs 1)
+                  (values (list optional-argument
+                                (subseq target-arg (1+ (length prefix-chars))))
+                          nil))
+                 (t
+                  (error 'n-expected-arguments :num nargs
+                         :argument optional-argument))))
+              ((or (string= nargs "*") (string= nargs "?") (string= nargs "+"))
+               (values (list optional-argument
+                                (subseq target-arg (1+ (length prefix-chars))))
+                       nil)))))))
+
 (defgeneric process-argument (parser argument parse-result target-arg rest-args
                               &optional spec)
   (:documentation "this method will call `action-argument' and return
@@ -453,49 +503,49 @@ the arguments which should be processed afterwards."))
                              target-arg rest-args
                              &optional (spec :simple))
   ;; spec is one of :simple, :long-equal or :continuous
-  (if (eq spec :long-equal)
-      (multiple-value-bind (before partitioner after)
-          (clap-builtin:partition target-arg "=")
-        (process-argument parser argument
-                          parse-result
-                          before
-                          (cons after rest-args)))
-      (with-slots (flags nargs) argument
-        (cond
-          ((numberp nargs)
-           (let ((next-rest-args (subseq rest-args nargs)))
-             (action-argument argument (subseq rest-args 0 nargs) parse-result)
-             next-rest-args))
-          ((string= nargs "?")
-           (let ((next-rest-args (cdr rest-args)))
-             (action-argument argument (car rest-args) parse-result)
-             next-rest-args))
-          ((string= nargs "*")
-           ;; until find optional argument
-           (with-slots (prefix) parser
-             (let ((arg-num (loop
-                               for arg in rest-args
-                               for i from 0
-                               until (clap-builtin:startswith arg prefix)
-                               finally (return i))))
-               (let ((next-rest-args (subseq rest-args arg-num)))
-                 (action-argument argument (subseq rest-args 0 arg-num)
-                                  parse-result)
-                 next-rest-args))))
-          ((string= nargs "+")
-           (with-slots (prefix) parser
-             (let ((arg-num (loop
-                               for arg in rest-args
-                               for i from 0
-                               until (clap-builtin:startswith arg prefix)
-                               finally (return i))))
-               (if (= arg-num 0)
-                   (error 'too-few-arguments))
-               (let ((next-rest-args (subseq rest-args arg-num)))
-                 (action-argument argument (subseq rest-args 0 arg-num)
-                                  parse-result)
-                 next-rest-args))))
-          ))))
+  (cond ((eq spec :long-equal)
+         (multiple-value-bind (before partitioner after)
+             (clap-builtin:partition target-arg "=")
+           (process-argument parser argument parse-result
+                             before (cons after rest-args))))
+        ((eq spec :continuous)
+         (multiple-value-bind
+               (splitted-args rest)
+             (split-continuous-optional-arguments
+              parser argument target-arg)
+           (process-argument parser argument parse-result
+                             (car splitted-args)
+                             (if rest
+                                 (append (cdr splitted-args)
+                                         (list rest) rest-args)
+                                 (append (cdr splitted-args) rest-args)))))
+        ((eq spec :simple)
+         (with-slots (flags nargs) argument
+           (cond
+             ((numberp nargs)
+              (let ((next-rest-args (subseq rest-args nargs)))
+                (action-argument argument
+                                 (subseq rest-args 0 nargs) parse-result)
+                next-rest-args))
+             ((string= nargs "?")
+              (let ((next-rest-args (cdr rest-args)))
+                (action-argument argument (car rest-args) parse-result)
+                next-rest-args))
+             ((string= nargs "*")
+              (with-slots (prefix) parser
+                (let ((arg-num (count-vararg-num rest-args prefix)))
+                  (let ((next-rest-args (subseq rest-args arg-num)))
+                    (action-argument argument (subseq rest-args 0 arg-num)
+                                     parse-result)
+                    next-rest-args))))
+             ((string= nargs "+")
+              (with-slots (prefix) parser
+                (let ((arg-num (count-vararg-num rest-args prefix)))
+                  (if (= arg-num 0) (error 'too-few-arguments))
+                  (let ((next-rest-args (subseq rest-args arg-num)))
+                    (action-argument argument (subseq rest-args 0 arg-num)
+                                     parse-result)
+                    next-rest-args)))))))))
 
 (defmethod process-argument ((parser argument-parser)
                              (argument help-argument)
