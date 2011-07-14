@@ -26,7 +26,9 @@
   (clap-argparse:add-argument parser "+f")
   (clap-argparse:add-argument parser "++bar")
   (describe (clap-argparse:parse-args parser
-                                      (clap-builtin:split "+f X ++bar Y"))))
+                                      (clap-builtin:split "+f X ++bar Y")))
+  (describe (clap-argparse:parse-args parser
+                                      (clap-builtin:split "+f X ++bar=Y"))))
 
 ;; parent sample
 (let ((parent-parser (make-instance 'clap-argparse:argument-parser
