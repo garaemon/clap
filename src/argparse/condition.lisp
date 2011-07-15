@@ -95,4 +95,13 @@ number of the parameters"))
      (format s "no such option: ~A" (no-such-option-option c))))
   (:documentation
    "a condition to be reported if undefined optional argument is specified"))
-             
+
+(define-condition extra-arguments (argparse-error)
+  ((args :initarg :args
+         :accessor extra-arguments-args))
+  (:report
+   (lambda (c s)
+     (format s "extra arguments found: ~{~A~^ ~}"
+             (extra-arguments-args c))))
+  (:documentation
+   "a condition to be reported if a couple of extra arguments are specified"))

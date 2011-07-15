@@ -1037,12 +1037,12 @@ or NIL."))
                   rest
                 (setf rest 0)))
              (t
-              (error "it might be a bag")))
+              (error "it might be a bag [0]")))
            (cond
              ((string= narg "?") 0)
              ((string= narg "*") 0)
              (t
-              (error "it might be a bag"))))))
+              (error "it might be a bag [1]"))))))
 
 (defun nargs-list-fill-lefter-+ (nargs-list rest-num)
   "fill the list of nargs which has + in the most left position."
@@ -1056,10 +1056,10 @@ or NIL."))
          ((= rest 1)
           (cond ((string= narg "?") 0)
                 ((string= narg "+") (setf rest 0) 1)
-                (t (error "it might be a bag"))))
+                (t (error "it might be a bag [2]"))))
          ((= rest 0)
           (cond ((string= narg "?") 0)
-                (t (error "it might be a bag"))))
+                (t (error "it might be a bag [3]"))))
          (t
           (cond
             ((string= narg "?")
@@ -1070,7 +1070,7 @@ or NIL."))
                  rest
                (setf rest 0)))
             (t
-             (error "it might be a bag")))))))
+             (error "it might be a bag [4]")))))))
 
 (defun nargs-list-fill-? (nargs-list rest-num)
   "fill the list of nargs which has ?s in itself."
@@ -1130,8 +1130,18 @@ of the arguments."))
        (let ((rest-num (- (length args)
                           (length (remove-if-not #'numberp narg-list)))))
          (nargs-list-fill-? narg-list rest-num)))
-      (t
-       (error "it might be a bug")))))  ;??
+      (t           ; has ? option but too many arguments are specified
+       (error 'extra-arguments
+              :args (subseq
+                     args
+                     (reduce #'+
+                             (mapcar
+                              #'(lambda (n)
+                                  (cond ((numberp n) n)
+                                        ((string= n "?") 1)
+                                        (t
+                                         (error "it mighe be a bug [5]"))))
+                              narg-list))))))))
 
 (defgeneric parse-positional-args (parser args parse-result &key namespace)
   (:documentation
