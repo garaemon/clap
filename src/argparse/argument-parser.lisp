@@ -141,7 +141,8 @@ the argument will be sotred in.")
          :documentation "mode of the file system."))
   (:documentation
    "this is an implementation of argparse.FileType.
-we don't support buffer size specification because it is not support
+
+we don't support buffer size specification because it is not supported
 by CL open function."))
 
 (defclass namespace ()
@@ -150,7 +151,9 @@ by CL open function."))
              :documentation "a placeholder of the parsed arguments.
 its a dictionary."))
   (:documentation
-   "namespace object is used to put the result of parsing. you can access
+   "this is an implementation of argparse.Namespace.
+
+namespace object is used to put the result of parsing. you can access
 contents using clap-builtin:lookup"))
 
 (defmethod print-object ((object namespace) stream)
