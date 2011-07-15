@@ -21,6 +21,22 @@ few arguments."))
    "a condition to be reporeted if there is an error cousing from type
 conversion."))
 
+(define-condition invalid-type-error (argument-type-error)
+  ((argument :initarg :argument
+             :accessor invalid-type-error-argument)
+   (value :initarg :value
+          :accessor invalid-type-error-value)
+   (type :initarg :type
+         :accessor invalid-type-error-type))
+  (:report
+   (lambda (c s)
+     (format s "argument ~A: invalid ~A value: ~A"
+             (invalid-type-error-argument c)
+             (invalid-type-error-type c)
+             (invalid-type-error-value c))))
+  (:documentation
+   ""))
+
 (define-condition invalid-choice (argparse-error)
   ((argument :initarg :argument
              :accessor invalid-choice-argument)
@@ -70,3 +86,4 @@ conversion."))
   (:documentation
    "a condition to be reported if the arguments did not satisfy the
 number of the parameters"))
+

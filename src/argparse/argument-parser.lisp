@@ -144,6 +144,31 @@ the argument will be sotred in.")
 we don't support buffer size specification because it is not support
 by CL open function."))
 
+(defclass namespace ()
+  ((contents :initarg :contents :initform (clap-builtin:dict)
+             :accessor contents
+             :documentation "a placeholder of the parsed arguments.
+its a dictionary."))
+  (:documentation
+   "namespace object is used to put the result of parsing. you can access
+contents using clap-builtin:lookup"))
+
+(defmethod print-object ((object namespace) stream)
+  (print-unreadable-object (object stream :type t)
+    (format stream "~A"
+            (clap-builtin:join
+             ", " (mapcar
+                   #'(lambda (key value)
+                       (format nil "~A=~A" key value))
+                   (clap-builtin:keys (contents object))
+                   (clap-builtin:values (contents object)))))))
+
+(defmethod clap-builtin:lookup ((namespace namespace) key)
+  (gethash key (contents namespace)))
+
+(defmethod (setf clap-builtin:lookup) (val (namespace namespace) key)
+  (setf (gethash key (contents namespace)) val))
+
 (defgeneric make-help-argument (parser)
   (:documentation
    "make a help-argument instance using `argument-parser'."))
@@ -348,43 +373,47 @@ to parse `arg'."))
                  (clap-builtin:partition arg "=")
                (if (string= before flag)
                    (return-from find-match-optional-argument
-                     (values argument :long-equal)))))
+                     (values argument :long-equal flag)))))
             ;; option like --foo 1, -a 1 
             ;; if the option requires some arguments, they are separated
             ;; with a couple of whitespace
             ((string= flag arg)
              (return-from find-match-optional-argument
-               (values argument :simple))))))
+               (values argument :simple flag))))))
   (dolist (argument (optional-arguments parser))
     (dolist (flag (flags argument))
       ;; option like -a1 or -ab
       (if (clap-builtin:startswith arg flag)
           (return-from find-match-optional-argument
-            (values argument :continuous)))))
+            (values argument :continuous flag)))))
   nil)
 
-(defgeneric convert-type (argument val)
+(defgeneric convert-type (argument val argname)
   (:documentation
    "convert `val' to the type specified by the argument.
 if the type is nil, no conversion is accompleshed."))
 
-(defmethod convert-type ((argument argument) val)
+(defmethod convert-type ((argument argument) val argname)
   (with-slots (type) argument
     (cond
       ((null type) val)
-      ((or (eq type :integer)
-           (eq type :int)
-           (eq type 'integer)
-           (eq type 'int))
-       (clap-builtin:int val))
+      ((or (eq type :integer) (eq type :int)
+           (eq type 'integer) (eq type 'int))
+       (handler-case (clap-builtin:int val)
+         (error (c)
+           (error 'invalid-type-error :argument argname
+                  :value val :type "int"))))
       ((or (eq type :float)
            (eq type 'float))
-       (coerce (read-from-string val) 'float))
+       (handler-case (coerce (read-from-string val) 'float)
+         (error (c)
+           (error 'invalid-type-error :argument argname
+                  :value val :type "float"))))
       ((or (eq type :string)
            (eq type :str)
            (eq type 'string)
            (eq type 'str))
-       val)
+       (format nil "~A" val))           ;to string
       ((or (eq type :open)
            (eq type 'open))
        (open val))
@@ -395,12 +424,13 @@ if the type is nil, no conversion is accompleshed."))
        (funcall type val))
       )))
 
-(defgeneric action-argument (argument args parse-result)
+(defgeneric action-argument (argument args parse-result matched-argname)
   (:documentation "this method will process `args' according to the
 `action' of `argument'. the supported `action' are :store, :store-const,
 :store-true, :store-false, :append, :append-const, :version and lambda form."))
 
-(defmethod action-argument ((argument argument) args parse-result)
+(defmethod action-argument ((argument argument) args parse-result
+                            matched-argname)
   (with-slots (choices action nargs const version) argument
     (symbol-macrolet ((value (clap-builtin:lookup parse-result
                                                   (dest argument))))
@@ -409,15 +439,20 @@ if the type is nil, no conversion is accompleshed."))
          (cond
            ((numberp nargs)
             (if (= nargs 1)
-                (setf value (convert-type argument (car args)))
-                (setf value (mapcar #'(lambda (x) (convert-type argument x))
+                (setf value (convert-type argument (car args) matched-argname))
+                (setf value (mapcar #'(lambda (x)
+                                        (convert-type argument x matched-argname))
                                     args))))
            ((string= nargs "?")
-            (setf value (convert-type argument (car args))))
+            (setf value (convert-type argument (car args) matched-argname)))
            ((string= nargs "*")
-            (setf value (mapcar #'(lambda (x) (convert-type argument x)) args)))
+            (setf value (mapcar #'(lambda (x)
+                                    (convert-type argument x matched-argname))
+                                args)))
            ((string= nargs "+")
-            (setf value (mapcar #'(lambda (x) (convert-type argument x)) args))))
+            (setf value (mapcar #'(lambda (x)
+                                    (convert-type argument x matched-argname))
+                                args))))
          ;; verificate :choices
          (if (and choices (not (member value choices :test #'equal)))
              (error 'invalid-choice :argument (or (name argument)
@@ -432,12 +467,15 @@ if the type is nil, no conversion is accompleshed."))
         (:append
          (if (null value)
              (if (= nargs 1)
-                 (setf value (convert-type argument args))
-                 (setf value (list (convert-type argument args))))
+                 (setf value (convert-type argument args matched-argname))
+                 (setf value
+                       (list (convert-type argument args matched-argname))))
              (if (= nargs 1)
-                 (setf value (append args (convert-type argument value)))
+                 (setf value (append args (convert-type
+                                           argument value matched-argname)))
                  (setf value (append value
-                                     (list (convert-type argument args))))))
+                                     (list (convert-type
+                                            argument args matched-argname))))))
          (if (and choices (not (member value choices :test #'equal)))
              (error 'invalid-choice)))
         (:append-const
@@ -494,22 +532,24 @@ nargs of argument. it returns multiple values of (splitted-list rest-arg)"))
                        nil)))))))
 
 (defgeneric process-argument (parser argument parse-result target-arg rest-args
-                              &optional spec)
+                                     matched-argname
+                                     &optional spec)
   (:documentation "this method will call `action-argument' and return
 the arguments which should be processed afterwards."))
 
 (defmethod process-argument ((parser argument-parser) (argument argument)
                              parse-result
                              target-arg rest-args
+                             matched-argname
                              &optional (spec :simple))
   ;; spec is one of :simple, :long-equal or :continuous
   (cond ((eq spec :long-equal)
          (multiple-value-bind (before partitioner after)
              (clap-builtin:partition target-arg "=")
            (process-argument parser argument parse-result
-                             before (cons after rest-args))))
+                             before (cons after rest-args) matched-argname)))
         ((eq spec :continuous)
-         (multiple-value-bind
+         (multiple-value-bind           ;TODO: spec
                (splitted-args rest)
              (split-continuous-optional-arguments
               parser argument target-arg)
@@ -518,25 +558,26 @@ the arguments which should be processed afterwards."))
                              (if rest
                                  (append (cdr splitted-args)
                                          (list rest) rest-args)
-                                 (append (cdr splitted-args) rest-args)))))
+                                 (append (cdr splitted-args) rest-args))
+                             matched-argname)))
         ((eq spec :simple)
          (with-slots (flags nargs) argument
            (cond
              ((numberp nargs)
               (let ((next-rest-args (subseq rest-args nargs)))
                 (action-argument argument
-                                 (subseq rest-args 0 nargs) parse-result)
+                                 (subseq rest-args 0 nargs) parse-result matched-argname)
                 next-rest-args))
              ((string= nargs "?")
               (let ((next-rest-args (cdr rest-args)))
-                (action-argument argument (car rest-args) parse-result)
+                (action-argument argument (car rest-args) parse-result matched-argname)
                 next-rest-args))
              ((string= nargs "*")
               (with-slots (prefix) parser
                 (let ((arg-num (count-vararg-num rest-args prefix)))
                   (let ((next-rest-args (subseq rest-args arg-num)))
                     (action-argument argument (subseq rest-args 0 arg-num)
-                                     parse-result)
+                                     parse-result matched-argname)
                     next-rest-args))))
              ((string= nargs "+")
               (with-slots (prefix) parser
@@ -544,13 +585,14 @@ the arguments which should be processed afterwards."))
                   (if (= arg-num 0) (error 'too-few-arguments))
                   (let ((next-rest-args (subseq rest-args arg-num)))
                     (action-argument argument (subseq rest-args 0 arg-num)
-                                     parse-result)
+                                     parse-result matched-argname)
                     next-rest-args)))))))))
 
 (defmethod process-argument ((parser argument-parser)
                              (argument help-argument)
                              parse-result
                              target-arg rest-args
+                             matched-argname
                              &optional spec)
   (declare (ignore spec))
   ;; just print the help and exit from it
@@ -812,29 +854,14 @@ it just prints out the help to stdio."))
     (finish-output)
     t))
 
-(defgeneric make-class-from-options (parse-result)
-  (:documentation "return a class, that is an instance of standard-class.
-ths slots and thir values are defined by the `arguments' of parser."))
+(defgeneric parsed-options (parse-result namespace)
+  (:documentation "inner function of parse-args. this function will fill 
+the namespace object specified by `parse-result'."))
 
-(defmethod make-class-from-options ((parse-result hash-table))
-  (let ((dests (clap-builtin:keys parse-result)))
-    (let ((anon-class
-           (make-instance 'standard-class
-                          :direct-slots
-                          (mapcar #'(lambda (x) (list :name x))
-                                  dests))))
-      (make-instance anon-class))))
-
-(defgeneric parsed-options (parse-result)
-  (:documentation "inner function of parse-args. this function will return
-multiple values of a anonymous class instance to represent options and the list
-of remained arguments."))
-
-(defmethod parsed-options ((parse-result hash-table))
-  (let ((class (make-class-from-options parse-result)))
-    (dolist (arg (clap-builtin:items parse-result))
-      (setf (slot-value class (car arg)) (cdr arg)))
-    class))
+(defmethod parsed-options ((parse-result hash-table) (namespace namespace))
+  (dolist (arg (clap-builtin:items parse-result))
+    (setf (clap-builtin:lookup namespace (car arg)) (cdr arg)))
+  namespace)
 
 (defgeneric parse-optional-args-rec (parser args parse-result
                                             &key namespace nonmatched-args)
@@ -851,7 +878,7 @@ of options and the remaining arguments."))
       (let ((target-arg (car args))
             (rest-args (cdr args)))
         (multiple-value-bind
-              (match-argument spec)
+              (match-argument spec matched-argname)
             (find-match-optional-argument
              parser target-arg parse-result)
           (if match-argument
@@ -859,6 +886,7 @@ of options and the remaining arguments."))
                               (process-argument parser match-argument
                                                 parse-result
                                                 target-arg rest-args
+                                                matched-argname
                                                 spec)
                               parse-result
                               :namespace namespace
@@ -1111,7 +1139,7 @@ of the arguments."))
        for arg in positional-arguments
        for target in splitted-args
        if target
-       do (action-argument arg target parse-result))
+       do (action-argument arg target parse-result (name arg)))
     (values parse-result nil)))                           ;rest args?
 
 (defgeneric parse-args (parser &optional args namespace)
@@ -1119,7 +1147,7 @@ of the arguments."))
 
 (defmethod parse-args ((parser argument-parser)
                        &optional (args (cdr (clap-sys:argv)))
-                       (namespace nil))
+                       (namespace (make-instance 'namespace)))
   (let ((parse-result (make-parse-result-dict parser)))
     (handler-case
         (multiple-value-bind
@@ -1134,7 +1162,7 @@ of the arguments."))
             (verificate-arguments parser parse-result)
             (if args
                 (error 'unrecognized-arguments :args args))
-            (parsed-options parse-result)))
+            (parsed-options parse-result namespace)))
       (argparse-error
           (c)
         (print-usage parser)
