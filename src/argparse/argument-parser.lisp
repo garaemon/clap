@@ -389,6 +389,11 @@ to parse `arg'."))
       (if (clap-builtin:startswith arg flag)
           (return-from find-match-optional-argument
             (values argument :continuous flag)))))
+  (with-slots (prefix-chars) parser
+    (if (clap-builtin:startswith arg prefix-chars)
+        ;; arg must be an optional argument but there
+        ;; is no optional argument for that.
+        (error 'no-such-option :option arg)))
   nil)
 
 (defgeneric convert-type (argument val argname)

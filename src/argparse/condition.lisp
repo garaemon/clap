@@ -87,3 +87,12 @@ conversion."))
    "a condition to be reported if the arguments did not satisfy the
 number of the parameters"))
 
+(define-condition no-such-option (argparse-error)
+  ((option :initarg :option
+           :accessor no-such-option-option))
+  (:report
+   (lambda (c s)
+     (format s "no such option: ~A" (no-such-option-option c))))
+  (:documentation
+   "a condition to be reported if undefined optional argument is specified"))
+             
