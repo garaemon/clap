@@ -162,7 +162,7 @@ contents using clap-builtin:lookup"))
             (clap-builtin:join
              ", " (mapcar
                    #'(lambda (key value)
-                       (format nil "~A=~A" key value))
+                       (format nil "~A=~S" key value))
                    (clap-builtin:keys (contents object))
                    (clap-builtin:values (contents object)))))))
 
@@ -361,6 +361,27 @@ it reports an error. it the `name-or-flags' is valid, it returns
    flag
    (concatenate 'string (prefix-chars parser) (prefix-chars parser))))
 
+(defun looks-like-number-p (arg)
+  "return t if `arg' can be read as a number"
+  (handler-case
+      (progn (clap-builtin:int arg) t)
+    (error (c) nil)))
+      
+
+(defgeneric has-negative-number-option-p (parser)
+  (:documentation
+   "return T if parser has an option which can be read as a
+negative number"))
+
+(defmethod has-negative-number-option-p ((parser argument-parser))
+  (with-slots (prefix-chars arguments) parser
+    (and (string= prefix-chars "-")
+         (clap-builtin:any (mapcar #'(lambda (flag)
+                                       (if (null flag) nil
+                                           (looks-like-number-p flag)))
+                                   (mapcar #'flags arguments))))))
+
+
 (defgeneric find-match-optional-argument (parser arg parse-result)
   (:documentation "return an instance of `argument' which is matched
 to parse `arg'."))
@@ -391,9 +412,13 @@ to parse `arg'."))
             (values argument :continuous flag)))))
   (with-slots (prefix-chars) parser
     (if (clap-builtin:startswith arg prefix-chars)
-        ;; arg must be an optional argument but there
-        ;; is no optional argument for that.
-        (error 'no-such-option :option arg)))
+        (cond ((has-negative-number-option-p parser)
+               (error 'no-such-option :option arg))
+              ((not (looks-like-number-p arg)) ;-a rather than -1
+               (error 'no-such-option :option arg))
+              (t
+               ;; pass
+               ))))
   nil)
 
 (defgeneric convert-type (argument val argname)
@@ -885,24 +910,30 @@ of options and the remaining arguments."))
       (values parse-result (reverse nonmatched-args))
       (let ((target-arg (car args))
             (rest-args (cdr args)))
-        (multiple-value-bind
-              (match-argument spec matched-argname)
-            (find-match-optional-argument
-             parser target-arg parse-result)
-          (if match-argument
-              (parse-optional-args-rec parser
-                              (process-argument parser match-argument
-                                                parse-result
-                                                target-arg rest-args
-                                                matched-argname
-                                                spec)
-                              parse-result
-                              :namespace namespace
-                              :nonmatched-args nonmatched-args)
-              (parse-optional-args-rec
-               parser rest-args parse-result
-               :namespace namespace
-               :nonmatched-args (cons target-arg nonmatched-args)))))))
+        (with-slots (prefix-chars) parser
+          (if (string= target-arg (concatenate 'string
+                                               prefix-chars prefix-chars))
+              (values parse-result (append (reverse nonmatched-args)
+                                           rest-args))
+              (multiple-value-bind
+                    (match-argument spec matched-argname)
+                  (find-match-optional-argument
+                   parser target-arg parse-result)
+                (if match-argument
+                    (parse-optional-args-rec parser
+                                             (process-argument
+                                              parser match-argument
+                                              parse-result
+                                              target-arg rest-args
+                                              matched-argname
+                                              spec)
+                                             parse-result
+                                             :namespace namespace
+                                             :nonmatched-args nonmatched-args)
+                    (parse-optional-args-rec
+                     parser rest-args parse-result
+                     :namespace namespace
+                     :nonmatched-args (cons target-arg nonmatched-args)))))))))
 
 (defgeneric verificate-arguments (parser result)
   (:documentation
