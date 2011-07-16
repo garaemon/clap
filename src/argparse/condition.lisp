@@ -81,8 +81,8 @@ conversion."))
   (:report
    (lambda (c s)
      (format s "argument ~A: expected ~A argument(s)"
-             (n-expected-arguments c)
-             (n-expected-arguments-argument c))))
+             (n-expected-arguments-argument c)
+             (n-expected-arguments-num c))))
   (:documentation
    "a condition to be reported if the arguments did not satisfy the
 number of the parameters"))

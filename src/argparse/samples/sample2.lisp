@@ -25,24 +25,24 @@
                              :prefix-chars "+")))
   (clap-argparse:add-argument parser "+f")
   (clap-argparse:add-argument parser "++bar")
-  (describe (clap-argparse:parse-args parser
+  (print (clap-argparse:parse-args parser
                                       (clap-builtin:split "+f X ++bar Y")))
-  (describe (clap-argparse:parse-args parser
+  (print (clap-argparse:parse-args parser
                                       (clap-builtin:split "+f X ++bar=Y"))))
 
 ;; parent sample
 (let ((parent-parser (make-instance 'clap-argparse:argument-parser
                                     :add-help nil)))
-  (clap-argparse:add-argument parent-parser "--parent" :type 'int)
+  (clap-argparse:add-argument parent-parser "--parent" :type :int)
   (let ((foo-parser (make-instance 'clap-argparse:argument-parser
                                    :parents (list parent-parser))))
     (clap-argparse:add-argument foo-parser "foo")
-    (describe (clap-argparse:parse-args foo-parser
+    (print (clap-argparse:parse-args foo-parser
                                         (clap-builtin:split "--parent 2 XXX"))))
   (let ((bar-parser (make-instance 'clap-argparse:argument-parser
                                    :parents (list parent-parser))))
     (clap-argparse:add-argument bar-parser "--bar")
-    (describe (clap-argparse:parse-args
+    (print (clap-argparse:parse-args
                bar-parser
                (clap-builtin:split "--parent 2 --bar YYY")))))
 
@@ -50,7 +50,7 @@
 (let ((parser (make-instance 'clap-argparse:argument-parser)))
   (clap-argparse:add-argument parser "foo" :type :int)
   (clap-argparse:add-argument parser "bar" :type :open)
-  (describe
+  (print
    (clap-argparse:parse-args parser
                              (clap-builtin:split "2 sample2.lisp"))))
 
@@ -58,7 +58,7 @@
   (clap-argparse:add-argument parser "bar" :type (make-instance
                                                   'clap-argparse:file-type
                                                   :mode :output))
-  (describe
+  (print
    (clap-argparse:parse-args parser
                              (clap-builtin:split "hoge.txt"))))
 
@@ -72,10 +72,10 @@
                                        :format-control "~A is not a perfect square"
                                        :format-arguments `(,string)))
                             value)))
-  (describe
+  (print
    (clap-argparse:parse-args parser
                              (clap-builtin:split "9")))
-  (describe
+  (print
    (clap-argparse:parse-args parser
                              (clap-builtin:split "7"))))
 

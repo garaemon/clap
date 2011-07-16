@@ -145,33 +145,6 @@ the argument will be sotred in.")
 we don't support buffer size specification because it is not supported
 by CL open function."))
 
-(defclass namespace ()
-  ((contents :initarg :contents :initform (clap-builtin:dict)
-             :accessor contents
-             :documentation "a placeholder of the parsed arguments.
-its a dictionary."))
-  (:documentation
-   "this is an implementation of argparse.Namespace.
-
-namespace object is used to put the result of parsing. you can access
-contents using clap-builtin:lookup"))
-
-(defmethod print-object ((object namespace) stream)
-  (print-unreadable-object (object stream :type t)
-    (format stream "~A"
-            (clap-builtin:join
-             ", " (mapcar
-                   #'(lambda (key value)
-                       (format nil "~A=~S" key value))
-                   (clap-builtin:keys (contents object))
-                   (clap-builtin:values (contents object)))))))
-
-(defmethod clap-builtin:lookup ((namespace namespace) key)
-  (gethash key (contents namespace)))
-
-(defmethod (setf clap-builtin:lookup) (val (namespace namespace) key)
-  (setf (gethash key (contents namespace)) val))
-
 (defgeneric make-help-argument (parser)
   (:documentation
    "make a help-argument instance using `argument-parser'."))
@@ -364,9 +337,8 @@ it reports an error. it the `name-or-flags' is valid, it returns
 (defun looks-like-number-p (arg)
   "return t if `arg' can be read as a number"
   (handler-case
-      (progn (clap-builtin:int arg) t)
+      (clap-builtin:int arg)
     (error (c) nil)))
-      
 
 (defgeneric has-negative-number-option-p (parser)
   (:documentation
@@ -376,11 +348,15 @@ negative number"))
 (defmethod has-negative-number-option-p ((parser argument-parser))
   (with-slots (prefix-chars arguments) parser
     (and (string= prefix-chars "-")
-         (clap-builtin:any (mapcar #'(lambda (flag)
-                                       (if (null flag) nil
-                                           (looks-like-number-p flag)))
-                                   (mapcar #'flags arguments))))))
-
+         (clap-builtin:any
+          (reduce #'append
+                  (mapcar #'(lambda (flags)
+                              (mapcar
+                               #'(lambda (flag)
+                                   (if (null flag) nil
+                                       (looks-like-number-p flag)))
+                               flags))
+                          (mapcar #'flags arguments)))))))
 
 (defgeneric find-match-optional-argument (parser arg parse-result)
   (:documentation "return an instance of `argument' which is matched
@@ -397,19 +373,19 @@ to parse `arg'."))
                  (clap-builtin:partition arg "=")
                (if (string= before flag)
                    (return-from find-match-optional-argument
-                     (values argument :long-equal flag)))))
+                     (list argument :long-equal flag)))))
             ;; option like --foo 1, -a 1 
             ;; if the option requires some arguments, they are separated
             ;; with a couple of whitespace
             ((string= flag arg)
              (return-from find-match-optional-argument
-               (values argument :simple flag))))))
+               (list argument :simple flag))))))
   (dolist (argument (optional-arguments parser))
     (dolist (flag (flags argument))
       ;; option like -a1 or -ab
       (if (clap-builtin:startswith arg flag)
           (return-from find-match-optional-argument
-            (values argument :continuous flag)))))
+            (list argument :continuous flag)))))
   (with-slots (prefix-chars) parser
     (if (clap-builtin:startswith arg prefix-chars)
         (cond ((has-negative-number-option-p parser)
@@ -432,16 +408,20 @@ if the type is nil, no conversion is accompleshed."))
       ((null type) val)
       ((or (eq type :integer) (eq type :int)
            (eq type 'integer) (eq type 'int))
-       (handler-case (clap-builtin:int val)
+       (handler-case (clap-builtin:int val) ;check error
          (error (c)
            (error 'invalid-type-error :argument argname
-                  :value val :type "int"))))
+                  :value val :type "int")))
+       ;;(clap-builtin:int val))
+       )
       ((or (eq type :float)
            (eq type 'float))
-       (handler-case (coerce (read-from-string val) 'float)
+       (handler-case (coerce (read-from-string val) 'float) ;check error
          (error (c)
            (error 'invalid-type-error :argument argname
-                  :value val :type "float"))))
+                  :value val :type "float")))
+       ;;(coerce (read-from-string val) 'float))
+       )
       ((or (eq type :string)
            (eq type :str)
            (eq type 'string)
@@ -473,9 +453,10 @@ if the type is nil, no conversion is accompleshed."))
            ((numberp nargs)
             (if (= nargs 1)
                 (setf value (convert-type argument (car args) matched-argname))
-                (setf value (mapcar #'(lambda (x)
-                                        (convert-type argument x matched-argname))
-                                    args))))
+                (setf value (mapcar
+                             #'(lambda (x)
+                                 (convert-type argument x matched-argname))
+                             args))))
            ((string= nargs "?")
             (setf value (convert-type argument (car args) matched-argname)))
            ((string= nargs "*")
@@ -597,13 +578,18 @@ the arguments which should be processed afterwards."))
          (with-slots (flags nargs) argument
            (cond
              ((numberp nargs)
-              (let ((next-rest-args (subseq rest-args nargs)))
-                (action-argument argument
-                                 (subseq rest-args 0 nargs) parse-result matched-argname)
-                next-rest-args))
+              (if (<= nargs (length rest-args))
+                  (let ((next-rest-args (subseq rest-args nargs)))
+                    (action-argument argument
+                                     (subseq rest-args 0 nargs)
+                                     parse-result matched-argname)
+                    next-rest-args)
+                  (error 'n-expected-arguments
+                         :num nargs :argument matched-argname)))
              ((string= nargs "?")
               (let ((next-rest-args (cdr rest-args)))
-                (action-argument argument (car rest-args) parse-result matched-argname)
+                (action-argument argument (car rest-args)
+                                 parse-result matched-argname)
                 next-rest-args))
              ((string= nargs "*")
               (with-slots (prefix) parser
@@ -896,6 +882,63 @@ the namespace object specified by `parse-result'."))
     (setf (clap-builtin:lookup namespace (car arg)) (cdr arg)))
   namespace)
 
+;; TODO update doc
+(defgeneric parse-optional-args (parser args parse-result &key namespace)
+  (:documentation "this is a helper method of parse-args. this function will
+parser optional arguments of `args' and store the result into `arguments'
+of `parser' and `nonmatched-args'. finally, it will return multiple values
+of options and the remaining arguments."))
+
+;; -a 1 -b -c 2 3 -d -f
+;; --> '(0 2 3 6 7)
+(defmethod parse-optional-args ((parser argument-parser) args parse-result
+                                &key (namespace nil))
+  (with-slots (prefix-chars) parser
+    (let* ((-- (concatenate 'string prefix-chars prefix-chars))
+           (args* (loop for arg in args until (string= arg --) collect arg))
+           (rest-args (if (not (= (length args*) (length args)))
+                          (subseq args (1+ (length args*)))
+                          nil))
+           (has-negative-number-option (has-negative-number-option-p parser))
+           (option-poss
+            (loop
+               for arg in args*
+               for n from 0
+               if (and (clap-builtin:startswith arg prefix-chars)
+                       (not (looks-like-number-p arg)))
+               collect n
+               else if (and (clap-builtin:startswith arg prefix-chars)
+                            has-negative-number-option
+                            (looks-like-number-p arg))
+               collect n)))
+      (let ((nonmatched-args
+             (if option-poss
+                 (loop
+                    for start-option-pos = (car option-poss) then end-option-pos
+                    for end-option-pos in (append (cdr option-poss)
+                                                  (list (length args*)))
+                    for target = (elt args* start-option-pos)
+                    for candidate-args =
+                      (if (< (1+ start-option-pos) end-option-pos)
+                           (subseq args* (1+ start-option-pos) end-option-pos)
+                          nil)
+                    for (match-argument spec matched-argname)
+                      = (find-match-optional-argument parser target parse-result)
+                    if match-argument
+                    ;; the return value of process-argument is ushould be
+                    ;; parsed as positional argument
+                    collect
+                      (process-argument parser
+                                        match-argument parse-result
+                                        target candidate-args
+                                        matched-argname spec))
+                 (list args*))))
+        (values parse-result
+                (append (reduce #'append
+                                (remove-if #'null nonmatched-args))
+                        rest-args))))))
+
+;; DEPRECATED
 (defgeneric parse-optional-args-rec (parser args parse-result
                                             &key namespace nonmatched-args)
   (:documentation "this is a helper method of parse-args. this function will
@@ -1201,9 +1244,8 @@ of the arguments."))
     (handler-case
         (multiple-value-bind
               (parse-result args)
-            (parse-optional-args-rec parser args parse-result
-                                     :namespace namespace
-                                     :nonmatched-args nil)
+            (parse-optional-args parser args parse-result
+                                 :namespace namespace)
           (multiple-value-bind
                 (parse-result args)
               (parse-positional-args parser args parse-result
