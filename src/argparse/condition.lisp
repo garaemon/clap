@@ -105,3 +105,16 @@ number of the parameters"))
              (extra-arguments-args c))))
   (:documentation
    "a condition to be reported if a couple of extra arguments are specified"))
+
+(define-condition ambiguous-option (argparse-error)
+  ((arg :initarg :arg :accessor ambiguous-option-arg)
+   (options :initarg :options :accessor ambiguous-option-options))
+  (:report
+   (lambda (c s)
+     (format s "ambiguous option: ~A could match ~{~A~^, ~}"
+             (ambiguous-option-arg c)
+             (ambiguous-option-options c))))
+  (:documentation
+   "a condition to be reported if an ambigous option is specified"))
+   
+   

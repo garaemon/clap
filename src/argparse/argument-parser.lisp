@@ -358,6 +358,19 @@ negative number"))
                                flags))
                           (mapcar #'flags arguments)))))))
 
+(defgeneric find-possible-optional-arguments (parser arg)
+  (:documentation "returns a list of the instances of `arguments'
+which can be the optional arguments by abbreviating `arg'"))
+
+(defmethod find-possible-optional-arguments ((parser argument-parser) arg)
+  (loop for argument in (optional-arguments parser)
+     for possible-flags =
+       (loop for flag in (flags argument)
+          if (clap-builtin:startswith flag arg)
+          collect flag)
+     if possible-flags
+     collect (cons argument possible-flags)))
+
 (defgeneric find-match-optional-argument (parser arg parse-result)
   (:documentation "return an instance of `argument' which is matched
 to parse `arg'."))
@@ -380,6 +393,16 @@ to parse `arg'."))
             ((string= flag arg)
              (return-from find-match-optional-argument
                (list argument :simple flag))))))
+  ;; argument abbreviation
+  (let ((abbreviation-arguments (find-possible-optional-arguments parser arg)))
+    (cond ((> (length abbreviation-arguments) 1)
+           (error 'ambiguous-option :arg arg
+                  :options
+                  (reduce #'append (mapcar #'cdr abbreviation-arguments))))
+          ((= (length abbreviation-arguments) 1)
+           (return-from find-match-optional-argument
+             (list (car (car abbreviation-arguments))
+                   :simple (cadr abbreviation-arguments))))))
   (dolist (argument (optional-arguments parser))
     (dolist (flag (flags argument))
       ;; option like -a1 or -ab
@@ -392,9 +415,7 @@ to parse `arg'."))
                (error 'no-such-option :option arg))
               ((not (looks-like-number-p arg)) ;-a rather than -1
                (error 'no-such-option :option arg))
-              (t
-               ;; pass
-               ))))
+              (t )))) ;; pass 
   nil)
 
 (defgeneric convert-type (argument val argname)
@@ -889,8 +910,6 @@ parser optional arguments of `args' and store the result into `arguments'
 of `parser' and `nonmatched-args'. finally, it will return multiple values
 of options and the remaining arguments."))
 
-;; -a 1 -b -c 2 3 -d -f
-;; --> '(0 2 3 6 7)
 (defmethod parse-optional-args ((parser argument-parser) args parse-result
                                 &key (namespace nil))
   (with-slots (prefix-chars) parser
@@ -901,9 +920,7 @@ of options and the remaining arguments."))
                           nil))
            (has-negative-number-option (has-negative-number-option-p parser))
            (option-poss
-            (loop
-               for arg in args*
-               for n from 0
+            (loop for arg in args* for n from 0
                if (and (clap-builtin:startswith arg prefix-chars)
                        (not (looks-like-number-p arg)))
                collect n
@@ -925,18 +942,15 @@ of options and the remaining arguments."))
                     for (match-argument spec matched-argname)
                       = (find-match-optional-argument parser target parse-result)
                     if match-argument
-                    ;; the return value of process-argument is ushould be
-                    ;; parsed as positional argument
                     collect
                       (process-argument parser
                                         match-argument parse-result
                                         target candidate-args
                                         matched-argname spec))
                  (list args*))))
-        (values parse-result
-                (append (reduce #'append
-                                (remove-if #'null nonmatched-args))
-                        rest-args))))))
+        (values parse-result (append (reduce #'append
+                                             (remove-if #'null nonmatched-args))
+                                     rest-args))))))
 
 ;; DEPRECATED
 (defgeneric parse-optional-args-rec (parser args parse-result
