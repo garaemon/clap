@@ -16,8 +16,8 @@
                                 :help
                                 "sum the integers (default: find the max)")
     (let ((args (clap-argparse:parse-args parser)))
-      (print (apply (slot-value args 'accumulate)
-                    (slot-value args 'integers))))))
+      (print (apply (clap-builtin:lookup args 'accumulate)
+                    (clap-builtin:lookup args 'integers))))))
 (main)
 
 ;;(sb-ext:save-lisp-and-die "sample1" :executable t :toplevel #'main)

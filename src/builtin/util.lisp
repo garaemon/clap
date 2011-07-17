@@ -35,3 +35,9 @@
          (append (flatten (car list)) (flatten (cdr list))))
         (t
          (append (list (car list)) (flatten (cdr list))))))
+
+(defmacro |.| (obj accessor &rest args)
+  "behaves like python's . operator. for example:
+
+(. foo bar 1 2 3) => (bar foo 1 2 3)"
+  `(,accessor ,obj ,@args))

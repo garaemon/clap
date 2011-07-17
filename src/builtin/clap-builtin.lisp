@@ -106,5 +106,6 @@
            #:not-implemented-yet
            #:class-method-not-supported
            #:value-error #:key-error
-           #:flatten)
+           #:flatten
+           #:.)
   )
