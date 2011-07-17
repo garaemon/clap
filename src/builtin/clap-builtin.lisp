@@ -107,5 +107,5 @@
            #:class-method-not-supported
            #:value-error #:key-error
            #:flatten
-           #:.)
+           #:. #:.hook)
   )
