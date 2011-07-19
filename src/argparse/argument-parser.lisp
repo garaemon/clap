@@ -1,12 +1,12 @@
 (in-package :clap-argparse)
 
-(clap-builtin::defconstant* +argument-actions+
+(clap-builtin:defconstant* +argument-actions+
   '(:store :store-const
     :store-true :store-false :store-t :store-nil
     :append :append-const
     :version))
 
-(clap-builtin::defconstant* +max-help-offset+ 10)
+(clap-builtin:defconstant* +max-help-offset+ 10)
 
 (defclass argument-parser ()
   ((description :accessor description
@@ -52,11 +52,34 @@ the conflict of options")
          :initform (car (clap-sys:argv))
          :documentation "the name of the program.
 default: (car (clap-sys:argv))")
+   (aliases :accessor aliases
+            :initarg :aliases
+            :initform nil
+            :documentation "aliases to prog name. they will be used
+when a parser is used as subparser.")
    (usage :accessor usage
           :initarg :usage
           :initform :generated
           :documentation "the string describing the program usage. it will be
 generated in default.")
+   (help :accessor help
+         :initarg :help
+         :initform ""
+         :documentation "the help of the parser. this will be used when
+argument-parser is used as subparser.")
+   (subcommands-manager :accessor subcommands-manager
+                        :initarg :subcommands-manager
+                        :initform nil
+                        :documentation "an instance of subcommands-manager.")
+   (super-parser :accessor super-parser
+                 :initarg :super-parser
+                 :initform nil
+                 :documentation "super perser of this parser.")
+   (default-func :accessor default-func
+     :initarg :default-func
+     :initform nil
+     :documentation "a place holder of the function specified by set-defaults
+method.")
    (arguments :accessor arguments
               :initarg :arguments
               :initform nil
@@ -145,6 +168,31 @@ the argument will be sotred in.")
 we don't support buffer size specification because it is not supported
 by CL open function."))
 
+(defclass subparsers-manager ()
+  ((super-parser :initarg :super-parser
+                 :initform nil
+                 :accessor super-parser
+                 :documentation "the super perser of subcommands.")
+   (parsers :initarg :parsers
+            :initform nil
+            :accessor parsers
+            :documentation "a list of argument-parsers")
+   (title :initarg :title
+          :initform nil
+          :accessor title
+          :documentation "title of subparsers")
+   (description :initarg :description
+                :initform nil
+                :accessor description
+                :documentation "description about subcommands")
+   (help :initarg :help
+         :initform nil
+         :accessor help
+         :documentation "help of subcommands"))
+  (:documentation
+   "its a manager of subparsers. it will be created by calling
+add_subparsers method of argument-parser."))
+
 (defgeneric make-help-argument (parser)
   (:documentation
    "make a help-argument instance using `argument-parser'."))
@@ -175,15 +223,15 @@ by CL open function."))
      (if (name arg)
          (setf (dest arg) (read-from-string (name arg)))
          (let ((long-option (find-if #'(lambda (x)
-                                         (long-option-p parser x))
-                                     (flags arg))))
+                                         (long-option-p parser x)) (flags arg))))
            (if long-option
                (setf (dest arg)
                      (read-from-string (clap-builtin:lstrip
                                         long-option (prefix-chars parser))))
                (setf (dest arg)
                      (read-from-string (clap-builtin:lstrip
-                                        (car (flags arg)) (prefix-chars parser))))))))
+                                        (car (flags arg))
+                                        (prefix-chars parser))))))))
     ((stringp (dest arg))
      (setf (dest arg) (read-from-string (dest arg)))))
   arg)
@@ -205,8 +253,7 @@ set `metavar' slot of the argument."))
            ;; check `arg' has a long option or not. if so, 
            ;; use it as `metavar'
            (let ((long-options
-                  (remove-if-not #'(lambda (f) (long-option-p parser f))
-                                 flags)))
+                  (remove-if-not #'(lambda (f) (long-option-p parser f)) flags)))
              (if (null long-options)
                  (setf metavar (clap-builtin:upper
                                 (clap-builtin:lstrip (car flags) prefix-chars)))
@@ -258,6 +305,35 @@ set `metavar' slot of the argument."))
   (if (version arg)
       (setf (version arg)
             (replace-prog (version arg) (prog parser)))))
+
+(defgeneric add-subparsers (parser &key title description help)
+  (:documentation
+   "implementation of ArgumentParser.add_subparsers
+
+this method allocates a subparsers-manager instance to register
+a couple of subcommands."))
+
+(defmethod add-subparsers ((parser argument-parser)
+                           &key (title :positional) (description nil) (help nil))
+  (let ((subparsers (make-instance 'subparsers-manager
+                                   :title title :help help
+                                   :description description
+                                   :super-parser parser)))
+    (setf (subcommands-manager parser) subparsers)
+    subparsers))
+
+(defgeneric add-parser (subparsers name &key help aliases)
+  (:documentation
+   "register a new argument-parser as a subcommand"))
+
+(defmethod add-parser ((subparsers subparsers-manager) name
+                       &key (help nil)
+                       (aliases nil))
+  (let ((parser (make-instance 'argument-parser :prog name :help help
+                               :aliases aliases
+                               :super-parser (super-parser subparsers))))
+    (setf (parsers subparsers) (append (parsers subparsers) (list parser)))
+    parser))
 
 (defgeneric add-argument (parser name-or-flags
                           &key
@@ -541,7 +617,7 @@ starts with `prefix'"
    "split a continuous optional argument such as -ab according to
 nargs of argument. it returns multiple values of (splitted-list rest-arg)"))
 
-(defmethod split-continuous-optional-arguments 
+(defmethod split-continuous-optional-arguments
     ((parser argument-parser) (argument argument) target-arg)
   (with-slots (prefix-chars) parser
     (with-slots (nargs) argument
@@ -584,7 +660,7 @@ the arguments which should be processed afterwards."))
            (process-argument parser argument parse-result
                              before (cons after rest-args) matched-argname)))
         ((eq spec :continuous)
-         (multiple-value-bind           ;TODO: spec
+         (multiple-value-bind
                (splitted-args rest)
              (split-continuous-optional-arguments
               parser argument target-arg)
@@ -662,13 +738,23 @@ generated automatically"))
           (write-string (replace-prog generated-usage prog))
           (terpri)))))
 
+(defgeneric generate-parent-usage (parser)
+  (:documentation
+   "generate the string of the parents of `parser'"))
+
+(defmethod generate-parent-usage ((parser argument-parser))
+  (if (null (super-parser parser))
+      (prog parser)
+      (concatenate 'string (generate-parent-usage (super-parser parser))
+                   " " (prog parser))))
+
 (defgeneric generate-usage (parser)
   (:documentation
    "generate the string of the usage from argument-parser object."))
 
 (defmethod generate-usage ((parser argument-parser))
   (with-slots (prog) parser
-    (format nil "usage: ~A ~A ~A" prog
+    (format nil "usage: ~A ~A ~A" (generate-parent-usage parser)
             (generate-optional-arguments-usage parser)
             (generate-positional-arguments-usage parser))))
 
@@ -688,7 +774,7 @@ generated automatically"))
   (remove-if
    #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
 
-(defun argument-format (metavar nargs)
+(defun argument-format (metavar nargs choices)
   "return the string to show the parameters of the argument
 according to `nargs' and `metavar'."
   (cond
@@ -696,11 +782,14 @@ according to `nargs' and `metavar'."
      (if (= nargs 0)
          ""
          (clap-builtin:join " "
-                            (if (and (listp metavar)
-                                     (= (length metavar) nargs))
-                                metavar ;error check required?
-                                (make-list nargs
-                                           :initial-element metavar)))))
+                            (cond (choices
+                                   (list (format nil "{~{~A~^,~}}" choices)))
+                                  ((and (listp metavar)
+                                        (= (length metavar) nargs))
+                                   metavar) ;error check required?
+                                  (t
+                                   (make-list nargs
+                                              :initial-element metavar))))))
     ((string= nargs "*")
      (format nil "[~A [~A ...]]" metavar metavar)) ; [U [U ...]]
     ((string= nargs "+")
@@ -715,18 +804,15 @@ according to `nargs' and `metavar'."
 (defmethod generate-one-optional-argument-usage ((argument argument)
                                                  (parser argument-parser))
   (let ((short-options
-         (remove-if #'(lambda (f) (long-option-p parser f))
-                    (flags argument))))
-    (let ((option-str
-           (if short-options
-               (car short-options)
-               (car (flags argument)))))
+         (remove-if #'(lambda (f) (long-option-p parser f)) (flags argument))))
+    (let ((option-str (if short-options
+                          (car short-options)
+                          (car (flags argument)))))
       (with-slots (nargs metavar) argument
-        (let ((argument-str (argument-format metavar nargs)))
+        (let ((argument-str (argument-format metavar nargs (choices argument))))
           (format nil "[~A]"
                   (clap-builtin:join
                    " "
-
                    (if (string= argument-str "")
                        (list option-str)
                        (list option-str argument-str)))))))))
@@ -764,11 +850,20 @@ according to `nargs' and `metavar'."
    "return a string of the usage of positional arguments"))
 
 (defmethod generate-positional-arguments-usage ((parser argument-parser))
-  (clap-builtin:join
-   " "
-   (mapcar #'(lambda (argument)
-               (generate-one-positional-argument-usage argument parser))
-           (positional-arguments parser))))
+  (let ((this-parser-usage
+         (clap-builtin:join
+          " "
+          (mapcar #'(lambda (argument)
+                      (generate-one-positional-argument-usage argument parser))
+                  (positional-arguments parser))))
+        (manager (subcommands-manager parser)))
+    (let ((subcommand-usage (if manager
+                                (clap-builtin:join
+                                 "," (mapcar #'prog (parsers manager)))
+                                "")))
+      (if (string= subcommand-usage "")
+          this-parser-usage
+          (format nil "{~A} ~A" subcommand-usage this-parser-usage)))))
 
 (defgeneric print-description (parser)
   (:documentation
@@ -780,6 +875,9 @@ according to `nargs' and `metavar'."
       (write-string (replace-prog description prog))
       (terpri)
       (terpri))))
+
+(defun offset-space-string (offset)
+  (coerce (make-list offset :initial-element #\ ) 'string))
 
 (defgeneric print-positional-argument-help (arg parser offset)
   (:documentation
@@ -811,7 +909,7 @@ according to `nargs' and `metavar'."
                                          offset)
   (with-slots (metavar help nargs default) arg
     (let ((option-str (clap-builtin:join ", " (flags arg)))
-          (argument-str (argument-format metavar nargs)))
+          (argument-str (argument-format metavar nargs (choices arg))))
       (with-slots (prog) parser
         (let ((help-str (concatenate 'string
                                      "  "
@@ -830,18 +928,46 @@ according to `nargs' and `metavar'."
                                                       default))))
           (write-string help-str) (terpri))))))
 
-(defgeneric print-positional-arguments (parser offset)
+(defgeneric print-subcommands-arguments-contents (manager offset)
   (:documentation
-   "print the help of the positional arguments."))
+   "print the help of subcommands without title"))
+
+(defmethod print-subcommands-arguments-contents ((manager subparsers-manager)
+                                                 offset)
+  (format t "  {~{~A~^,~}}  ~A~%"
+          (mapcar #'prog (parsers manager)) (help manager))
+  (dolist (subparser (parsers manager))
+    (cond ((help subparser)
+           (format t "~A    ~A~%" (prog subparser) (help subparser)))
+          ((eq (title manager) :positional)
+           (format t "~A~%" (prog subparser))))))
+
+(defgeneric print-subcommands-arguments (manager offset)
+  (:documentation "print the help of subcommands with title"))
+
+(defmethod print-subcommands-arguments ((manager subparsers-manager) offset)
+  ;; print title
+  (format t "~%~A:~%" (title manager))
+  (if (description manager)
+      (format t "  ~A~%"  (description manager)))
+  (print-subcommands-arguments-contents manager offset))
+
+(defgeneric print-positional-arguments (parser offset)
+  (:documentation "print the help of the positional arguments."))
 
 (defmethod print-positional-arguments ((parser argument-parser) offset)
-  (let ((positional-arguments (positional-arguments parser)))
-    (when positional-arguments
+  (let ((positional-arguments (positional-arguments parser))
+        (manager (subcommands-manager parser)))
+    (when (or (and manager
+                   (eq (title manager) :positional))
+              positional-arguments)
       (format t "positional arguments:~%")
+      ;; subcommand
+      (when (and manager (eq (title manager) :positional))
+        (print-subcommands-arguments-contents manager offset))
       (dolist (arg positional-arguments)
         (print-positional-argument-help arg parser offset)
         (terpri)))))
-
 
 (defgeneric print-optional-arguments (parser offset)
   (:documentation
@@ -873,8 +999,7 @@ according to `nargs' and `metavar'."
          (apply #'max
                 (mapcar #'(lambda (x)
                             (if (optional-argument-p parser x)
-                                (length (clap-builtin:join
-                                         ", " (flags x)))
+                                (length (clap-builtin:join ", " (flags x)))
                                 (length (metavar x))))
                         (arguments parser)))))
     (+ 2 max-width)))
@@ -890,6 +1015,9 @@ it just prints out the help to stdio."))
     (print-description parser)
     (print-positional-arguments parser offset)
     (print-optional-arguments parser offset)
+    (if (and (subcommands-manager parser)
+             (not (eq (title (subcommands-manager parser)) :positional)))
+        (print-subcommands-arguments (subcommands-manager parser) offset))
     (print-epilog parser)
     (finish-output)
     t))
@@ -903,12 +1031,10 @@ the namespace object specified by `parse-result'."))
     (setf (clap-builtin:lookup namespace (car arg)) (cdr arg)))
   namespace)
 
-;; TODO update doc
 (defgeneric parse-optional-args (parser args parse-result &key namespace)
   (:documentation "this is a helper method of parse-args. this function will
-parser optional arguments of `args' and store the result into `arguments'
-of `parser' and `nonmatched-args'. finally, it will return multiple values
-of options and the remaining arguments."))
+parser optional arguments of `args' and store the result into `parse-result'.
+finally, it will return a list of options and the remaining arguments."))
 
 (defmethod parse-optional-args ((parser argument-parser) args parse-result
                                 &key (namespace nil))
@@ -928,7 +1054,9 @@ of options and the remaining arguments."))
                             has-negative-number-option
                             (looks-like-number-p arg))
                collect n)))
-      (let ((nonmatched-args
+      (let ((option-before-args (if option-poss
+                                    (subseq args* 0 (car option-poss))))
+            (nonmatched-args
              (if option-poss
                  (loop
                     for start-option-pos = (car option-poss) then end-option-pos
@@ -941,56 +1069,17 @@ of options and the remaining arguments."))
                           nil)
                     for (match-argument spec matched-argname)
                       = (find-match-optional-argument parser target parse-result)
-                    if match-argument
+                    if match-argument   ;need?
                     collect
                       (process-argument parser
                                         match-argument parse-result
                                         target candidate-args
                                         matched-argname spec))
                  (list args*))))
-        (values parse-result (append (reduce #'append
+        (values parse-result (append option-before-args
+                                     (reduce #'append
                                              (remove-if #'null nonmatched-args))
                                      rest-args))))))
-
-;; DEPRECATED
-(defgeneric parse-optional-args-rec (parser args parse-result
-                                            &key namespace nonmatched-args)
-  (:documentation "this is a helper method of parse-args. this function will
-parser optional arguments of `args' and store the result into `arguments'
-of `parser' and `nonmatched-args'. finally, it will return multiple values
-of options and the remaining arguments."))
-
-(defmethod parse-optional-args-rec ((parser argument-parser) args parse-result
-                                    &key (namespace nil)
-                                    (nonmatched-args nil))
-  (if (null args)
-      (values parse-result (reverse nonmatched-args))
-      (let ((target-arg (car args))
-            (rest-args (cdr args)))
-        (with-slots (prefix-chars) parser
-          (if (string= target-arg (concatenate 'string
-                                               prefix-chars prefix-chars))
-              (values parse-result (append (reverse nonmatched-args)
-                                           rest-args))
-              (multiple-value-bind
-                    (match-argument spec matched-argname)
-                  (find-match-optional-argument
-                   parser target-arg parse-result)
-                (if match-argument
-                    (parse-optional-args-rec parser
-                                             (process-argument
-                                              parser match-argument
-                                              parse-result
-                                              target-arg rest-args
-                                              matched-argname
-                                              spec)
-                                             parse-result
-                                             :namespace namespace
-                                             :nonmatched-args nonmatched-args)
-                    (parse-optional-args-rec
-                     parser rest-args parse-result
-                     :namespace namespace
-                     :nonmatched-args (cons target-arg nonmatched-args)))))))))
 
 (defgeneric verificate-arguments (parser result)
   (:documentation
@@ -1248,6 +1337,51 @@ of the arguments."))
        do (action-argument arg target parse-result (name arg)))
     (values parse-result nil)))                           ;rest args?
 
+(defgeneric match-subcommand (parser arg)
+  (:documentation "return a subparser if arg matches one of subcommand
+of parser"))
+
+(defmethod match-subcommand ((parser argument-parser) arg)
+  (if (subcommands-manager parser)
+      (let ((subparsers (parsers (subcommands-manager parser))))
+        (find-if
+         #'(lambda (parser) (or (string= (prog parser) arg)
+                                (clap-builtin:any
+                                 (mapcar #'(lambda (x) (string= x arg))
+                                         (aliases parser)))))
+         subparsers))
+      nil))
+
+(defgeneric set-defaults (parser &key func)
+  (:documentation
+   "this is an implementation of ArgumentParser.set_defaults.
+
+a function registered by `set-defaults' will be abailable via func slot of
+namespace."))
+
+(defmethod set-defaults ((parser argument-parser) &key (func nil))
+  (if func (setf (default-func parser) func)))
+
+(defgeneric extract-subcommand-args (parser args)
+  (:documentation "split args into the arguments for subcommand and
+the arguments for the current argument-parser."))
+
+(defmethod extract-subcommand-args ((parser argument-parser) args)
+  (let ((manager (subcommands-manager parser)))
+    (if manager
+        (let ((subparsers (parsers manager)))
+          (multiple-value-bind (subparser submatch-pos)
+              (loop for arg in args
+                 for n from 0
+                 for match = (match-subcommand parser arg)
+                 if match
+                 return (values match n))
+            (if subparser
+                (values (subseq args (1+ submatch-pos))
+                        subparser (subseq args 0 submatch-pos))
+                (values nil nil args))))
+        (values nil nil args))))
+
 (defgeneric parse-args (parser &optional args namespace)
   (:documentation "this is an implementation of ArgumentParser.parse_args."))
 
@@ -1257,17 +1391,24 @@ of the arguments."))
   (let ((parse-result (make-parse-result-dict parser)))
     (handler-case
         (multiple-value-bind
-              (parse-result args)
-            (parse-optional-args parser args parse-result
-                                 :namespace namespace)
+              (subcommand-args subparser args)
+            (extract-subcommand-args parser args)
           (multiple-value-bind
                 (parse-result args)
-              (parse-positional-args parser args parse-result
-                                     :namespace namespace)
-            (verificate-arguments parser parse-result)
-            (if args
-                (error 'unrecognized-arguments :args args))
-            (parsed-options parse-result namespace)))
+              (parse-optional-args parser args parse-result
+                                   :namespace namespace)
+            (multiple-value-bind
+                  (parse-result args)
+                (parse-positional-args parser args parse-result
+                                       :namespace namespace)
+              (verificate-arguments parser parse-result)
+              (if args (error 'unrecognized-arguments :args args))
+              (if (and subparser (default-func subparser))
+                  (setf (func namespace) (default-func subparser)))
+              (if subparser
+                  (concat-namespace (parsed-options parse-result namespace)
+                                    (parse-args subparser subcommand-args))
+                  (parsed-options parse-result namespace)))))
       (argparse-error
           (c)
         (print-usage parser)

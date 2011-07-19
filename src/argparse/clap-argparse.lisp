@@ -8,5 +8,9 @@
            #:parse-args
            #:namespace
            #:print-help
-           #:argument-type-error)
+           #:argument-type-error
+           #:add-subparsers
+           #:add-parser
+           #:set-defaults
+           #:func)
   )

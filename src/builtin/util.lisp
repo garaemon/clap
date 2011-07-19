@@ -43,10 +43,10 @@ you can customize the behavior of . by overloading this method."))
 
 (declaim (inline .hook))
 (defmethod .hook (obj accessor &rest args)
-  (apply accessor obj args))
+  (apply (symbol-function accessor) obj args))
 
 (defmacro |.| (obj accessor &rest args)
   "behaves like python's . operator. for example:
 
  (. foo bar 1 2 3) => (bar foo 1 2 3)"
-  `(.hook ,obj (function ,accessor) ,@args))
+  `(.hook ,obj ',accessor ,@args))
