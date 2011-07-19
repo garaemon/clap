@@ -169,7 +169,12 @@ we don't support buffer size specification because it is not supported
 by CL open function."))
 
 (defclass subparsers-manager ()
-  ((super-parser :initarg :super-parser
+  ((dest :initarg :dest
+         :initform nil
+         :accessor dest
+         :documentation "the name subparser will be stored in `dest' slot of
+namespace object")
+   (super-parser :initarg :super-parser
                  :initform nil
                  :accessor super-parser
                  :documentation "the super perser of subcommands.")
@@ -306,7 +311,7 @@ set `metavar' slot of the argument."))
       (setf (version arg)
             (replace-prog (version arg) (prog parser)))))
 
-(defgeneric add-subparsers (parser &key title description help)
+(defgeneric add-subparsers (parser &key title description help dest)
   (:documentation
    "implementation of ArgumentParser.add_subparsers
 
@@ -314,8 +319,10 @@ this method allocates a subparsers-manager instance to register
 a couple of subcommands."))
 
 (defmethod add-subparsers ((parser argument-parser)
-                           &key (title :positional) (description nil) (help nil))
+                           &key (title :positional) (description nil) (help nil)
+                           (dest nil))
   (let ((subparsers (make-instance 'subparsers-manager
+                                   :dest dest
                                    :title title :help help
                                    :description description
                                    :super-parser parser)))
@@ -1393,6 +1400,11 @@ the arguments for the current argument-parser."))
         (multiple-value-bind
               (subcommand-args subparser args)
             (extract-subcommand-args parser args)
+          (if (and subparser (subcommands-manager parser)
+                   (dest (subcommands-manager parser)))
+              (setf (clap-builtin:lookup namespace
+                                         (dest (subcommands-manager parser)))
+                    (prog subparser)))
           (multiple-value-bind
                 (parse-result args)
               (parse-optional-args parser args parse-result
