@@ -9,10 +9,11 @@
            #:namespace
            #:print-help
            #:format-help
+           #:print-usage
+           #:format-usage
            #:argument-type-error
            #:add-subparsers
            #:add-parser
            #:set-defaults
            #:func
-           #:add-argument-group)
-  )
+           #:add-argument-group))

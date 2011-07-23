@@ -799,12 +799,13 @@ the arguments which should be processed afterwards."))
                   (format-usage parser stream))))
     (write-string format)))
 
-(defgeneric format-usage (parser stream)
+(defgeneric format-usage (parser &optional stream)
   (:documentation
    "write the usage of `parser' into `stream'. if it is not specified,
  the usage will be generated automatically"))
 
-(defmethod format-usage ((parser argument-parser) stream)
+(defmethod format-usage ((parser argument-parser) &optional
+                         (stream *standard-output*))
   (with-slots (usage prog) parser
     (if (not (eq usage :generated))
         (progn
@@ -1024,8 +1025,7 @@ according to `nargs' and `metavar'."
   (format stream "{~{~A~^,~}}" (mapcar #'prog (parsers manager))))
 
 (defgeneric format-subcommands-arguments-contents (manager offset stream)
-  (:documentation
-   "write the help of subcommands without title into `stream'"))
+  (:documentation "write the help of subcommands without title into `stream'"))
 
 (defmethod format-subcommands-arguments-contents ((manager subparsers-manager)
                                                   offset stream)
@@ -1102,8 +1102,7 @@ grouped in `argument-groups' of `parser'"))
             (terpri)))))))
 
 (defgeneric format-optional-arguments (parser offset stream)
-  (:documentation
-   "write the help of the optional arguments into `stream'."))
+  (:documentation　"write the help of the optional arguments into `stream'."))
 
 (defmethod format-optional-arguments ((parser argument-parser) offset stream)
   (let ((optional-arguments (optional-arguments parser)))
