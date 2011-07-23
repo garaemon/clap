@@ -67,6 +67,10 @@ generated in default.")
          :initform ""
          :documentation "the help of the parser. this will be used when
 argument-parser is used as subparser.")
+   (groups :accessor groups
+           :initarg :groups
+           :initform nil
+           :documentation "a list of `argument-group' objects")
    (subcommands-manager :accessor subcommands-manager
                         :initarg :subcommands-manager
                         :initform nil
@@ -75,11 +79,11 @@ argument-parser is used as subparser.")
                  :initarg :super-parser
                  :initform nil
                  :documentation "super perser of this parser.")
-   (default-func :accessor default-func
-     :initarg :default-func
-     :initform nil
-     :documentation "a place holder of the function specified by set-defaults
-method.")
+   (func :accessor func
+         :initarg :func
+         :initform nil
+         :documentation "a place holder of the function specified by
+set-defaults method.")
    (arguments :accessor arguments
               :initarg :arguments
               :initform nil
@@ -101,7 +105,6 @@ this class is useful to parse the command line options and arguments."))
       (setf (arguments parser)
             (cons (make-help-argument parser) (arguments parser))))
   parser)
-                                       
 
 (defclass argument ()
   ((name :initarg :name :initform nil
@@ -197,6 +200,47 @@ namespace object")
   (:documentation
    "its a manager of subparsers. it will be created by calling
 add_subparsers method of argument-parser."))
+
+(defclass argument-group ()
+  ((title :initarg :title
+          :initform nil
+          :accessor title
+          :documentation "the string of the title of `argument-group'")
+   (description :initarg :description
+                :initform nil
+                :accessor description
+                :documentation "the string of the description of
+`argument-group'")
+   (arguments :initarg :arguments
+              :initform nil
+              :accessor arguments
+              :documentation "a list of the arguments of the group")
+   (parent-parser :initarg :parent-parser
+                  :initform nil
+                  :accessor parent-parser
+                  :documentation "an instance of argument-parser which
+a `argument-group' object is created from."))
+  (:documentation
+   "this is an implementation of argparse.ArgumentGroup.
+
+you need to use `add-argument-group' method to create an instance of
+`argument-group'."))
+
+(defgeneric add-argument-group (parser &optional title description)
+  (:documentation
+   "this is an implementation of ArgumentParser.add_argument_group.
+
+The `add-argument-group' method returns an argument group object which
+has an `add-argument' like `argument-parser' class."))
+
+(defmethod add-argument-group ((parser argument-parser)
+                               &optional
+                               (title nil) (description nil))
+  (let ((group (make-instance 'argument-group :title title
+                              :description description
+                              :parent-parser parser)))
+    (setf (groups parser) (append (groups parser) (list group)))
+    group))
 
 (defgeneric make-help-argument (parser)
   (:documentation
@@ -367,6 +411,21 @@ a couple of subcommands."))
     (ensure-metavar arg parser)
     (setf (arguments parser) (append (arguments parser) (list arg)))
     arg))
+
+(defmethod add-argument ((group argument-group) name-or-flags
+                         &key
+                         (action :store) (nargs 1) (const nil)
+                         (default nil) (type nil) (choices nil) (version nil)
+                         (required nil) (help "") (metavar nil) (dest nil))
+  (let ((parser (parent-parser group)))
+    (let ((argument (add-argument parser name-or-flags
+                                  :action action :nargs nargs :const const
+                                  :default default :type type :choices choices
+                                  :required required :help help :metavar metavar
+                                  :dest dest :version version)))
+      ;; add to group
+      (setf (arguments group) (append (arguments group) (list argument)))
+      argument)))
 
 (defgeneric verificate-argument-name (parser name-or-flags)
   (:documentation
@@ -732,18 +791,28 @@ the arguments which should be processed afterwards."))
 
 (defgeneric print-usage (parser)
   (:documentation
-   "print the usage of `parser'. if it is not specified, the usage will be
-generated automatically"))
+   "print the usage of `parser'. if it is not specified,
+ the usage will be generated automatically"))
 
 (defmethod print-usage ((parser argument-parser))
+  (let ((format (with-output-to-string (stream)
+                  (format-usage parser stream))))
+    (write-string format)))
+
+(defgeneric format-usage (parser stream)
+  (:documentation
+   "write the usage of `parser' into `stream'. if it is not specified,
+ the usage will be generated automatically"))
+
+(defmethod format-usage ((parser argument-parser) stream)
   (with-slots (usage prog) parser
     (if (not (eq usage :generated))
         (progn
-          (write-string (replace-prog usage prog))
-          (terpri))
+          (write-string (replace-prog usage prog) stream)
+          (terpri stream))
         (let ((generated-usage (generate-usage parser)))
-          (write-string (replace-prog generated-usage prog))
-          (terpri)))))
+          (write-string (replace-prog generated-usage prog) stream)
+          (terpri stream)))))
 
 (defgeneric generate-parent-usage (parser)
   (:documentation
@@ -773,6 +842,11 @@ generated automatically"))
   (remove-if-not
    #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
 
+(defmethod optional-arguments ((group argument-group))
+  (let ((parser (parent-parser group)))
+    (remove-if-not
+     #'(lambda (x) (optional-argument-p parser x)) (arguments group))))
+
 (defgeneric positional-arguments (parser)
   (:documentation
    "return a list of the `argument' instances for positional arguments"))
@@ -780,6 +854,11 @@ generated automatically"))
 (defmethod positional-arguments ((parser argument-parser))
   (remove-if
    #'(lambda (x) (optional-argument-p parser x)) (arguments parser)))
+
+(defmethod positional-arguments ((group argument-group))
+  (let ((parser (parent-parser group)))
+    (remove-if
+     #'(lambda (x) (optional-argument-p parser x)) (arguments group))))
 
 (defun argument-format (metavar nargs choices)
   "return the string to show the parameters of the argument
@@ -872,144 +951,252 @@ according to `nargs' and `metavar'."
           this-parser-usage
           (format nil "{~A} ~A" subcommand-usage this-parser-usage)))))
 
-(defgeneric print-description (parser)
+(defgeneric format-description (parser stream)
   (:documentation
-   "print the description of `parser'."))
+   "write the description of `parser' to `stream'."))
 
-(defmethod print-description ((parser argument-parser))
+(defmethod format-description ((parser argument-parser) stream)
   (with-slots (description prog) parser
     (when (and description (not (= (length description) 0)))
-      (write-string (replace-prog description prog))
-      (terpri)
-      (terpri))))
+      (write-string (replace-prog description prog) stream)
+      (terpri stream)
+      (terpri stream))))
 
 (defun offset-space-string (offset)
-  (coerce (make-list offset :initial-element #\ ) 'string))
+  "make a space string which is `offset' length"
+  (make-string offset :initial-element #\  ))
 
-(defgeneric print-positional-argument-help (arg parser offset)
+(defgeneric format-positional-argument-help (arg parser offset stream)
   (:documentation
-   "print the help of a positional argument."))
+   "write the help of a positional argument into `stream'."))
 
-(defmethod print-positional-argument-help ((arg argument)
+(defmethod format-positional-argument-help ((arg argument)
                                            (parser argument-parser)
-                                           offset)
+                                           offset stream)
   (with-slots (metavar help default) arg
     (with-slots (prog) parser
-      (let ((help-str (concatenate 'string
-                                   "  " metavar
-                                   (coerce (make-list
-                                            (- offset (length metavar))
-                                            :initial-element #\ )
-                                           'string)
-                                   (replace-default
-                                    (replace-prog help prog)
-                                    default))))
-        (write-string help-str)
-        (terpri)))))
+      (let ((right-string (replace-default (replace-prog help prog) default)))
+        (let ((help-str (concatenate 'string
+                                           "  " metavar
+                                           (offset-space-string
+                                            (- offset (length metavar) 2))
+                                           right-string)))
+          (write-string help-str stream)
+          (terpri stream))))))
 
-(defgeneric print-optional-argument-help (arg parser offset)
+(defgeneric format-optional-argument-help (arg parser offset stream)
   (:documentation
-   "print the help of a optional argument."))
+   "write the help of a optional argument into `stream'."))
 
-(defmethod print-optional-argument-help ((arg argument)
-                                         (parser argument-parser)
-                                         offset)
+(defmethod format-optional-argument-help ((arg argument)
+                                          (parser argument-parser)
+                                          offset stream)
   (with-slots (metavar help nargs default) arg
     (let ((option-str (clap-builtin:join ", " (flags arg)))
           (argument-str (argument-format metavar nargs (choices arg))))
       (with-slots (prog) parser
-        (let ((help-str (concatenate 'string
-                                     "  "
-                                     option-str
-                                     " "
-                                     argument-str
-                                     (coerce
-                                      (make-list (max (- offset
-                                                         (+ (length option-str)
-                                                            (length argument-str)
-                                                            1))
-                                                      2)
-                                                 :initial-element #\ )
-                                      'string)
-                                     (replace-default (replace-prog help prog)
-                                                      default))))
-          (write-string help-str) (terpri))))))
+        (let ((right-string (replace-default (replace-prog help prog)
+                                             default)))
+          (write-string "  " stream)
+          (write-string option-str stream)
+          (if (not (string= argument-str ""))
+              (progn
+                (write-string " " stream)
+                (write-string argument-str stream)
+                (write-string (offset-space-string
+                         (- offset
+                            (max (+ (length option-str) (length argument-str) 3)
+                                 2))) stream))
+              (write-string (offset-space-string
+                             (- offset
+                                (max (+ (length option-str)
+                                        (length argument-str) 2)
+                                     2))) stream))
+          (write-string right-string stream)
+          (terpri stream))))))
 
-(defgeneric print-subcommands-arguments-contents (manager offset)
+(defgeneric format-subcommands-argument-help-title (manager stream)
   (:documentation
-   "print the help of subcommands without title"))
+   "write the left title of the help of subcommands into `stream'"))
 
-(defmethod print-subcommands-arguments-contents ((manager subparsers-manager)
-                                                 offset)
-  (format t "  {~{~A~^,~}}  ~A~%"
-          (mapcar #'prog (parsers manager)) (help manager))
+(defmethod format-subcommands-argument-help-title ((manager subparsers-manager)
+                                                   stream)
+  (format stream "{~{~A~^,~}}" (mapcar #'prog (parsers manager))))
+
+(defgeneric format-subcommands-arguments-contents (manager offset stream)
+  (:documentation
+   "write the help of subcommands without title into `stream'"))
+
+(defmethod format-subcommands-arguments-contents ((manager subparsers-manager)
+                                                  offset stream)
+  (let ((subcommand-set-str
+         (with-output-to-string (stream)
+           (format-subcommands-argument-help-title manager stream))))
+    (write-string "  " stream)
+    (write-string subcommand-set-str stream)
+    (write-string (offset-space-string (- offset (+ 2
+                                                    (length subcommand-set-str)
+                                                    2))) stream)
+    (write-string "  " stream)
+    (write-string (help manager) stream)
+    (terpri stream))
   (dolist (subparser (parsers manager))
     (cond ((help subparser)
-           (format t "~A    ~A~%" (prog subparser) (help subparser)))
+           (format stream "~A    ~A~%" (prog subparser) (help subparser)))
           ((eq (title manager) :positional)
-           (format t "~A~%" (prog subparser))))))
+           (format stream "~A~%" (prog subparser))))))
 
-(defgeneric print-subcommands-arguments (manager offset)
-  (:documentation "print the help of subcommands with title"))
+(defgeneric format-subcommands-arguments (manager offset stream)
+  (:documentation "write the help of subcommands with title into `stream'."))
 
-(defmethod print-subcommands-arguments ((manager subparsers-manager) offset)
+(defmethod format-subcommands-arguments ((manager subparsers-manager) offset
+                                         stream)
   ;; print title
-  (format t "~%~A:~%" (title manager))
+  (format stream "~%~A:~%" (title manager))
   (if (description manager)
-      (format t "  ~A~%"  (description manager)))
-  (print-subcommands-arguments-contents manager offset))
+      (format stream "  ~A~%"  (description manager)))
+  (format-subcommands-arguments-contents manager offset stream))
 
-(defgeneric print-positional-arguments (parser offset)
-  (:documentation "print the help of the positional arguments."))
+(defgeneric grouped-in-group (parser argument)
+  (:documentation "return non-NIL value if `argument' is one of the arguments
+grouped in `argument-groups' of `parser'"))
 
-(defmethod print-positional-arguments ((parser argument-parser) offset)
+(defmethod grouped-in-group ((parser argument-parser)
+                             (argument argument))
+  (find-if #'(lambda (group)
+               (find argument (arguments group)))
+           (groups parser)))
+
+(defgeneric format-grouped-arguments (parser offset stream)
+  (:documentation "write the help of the grouped arguments into `stream'."))
+
+(defmethod format-grouped-arguments ((parser argument-parser) offset stream)
+  (dolist (group (groups parser))
+    (format stream "~A:~%" (title group))
+    (if (description group)
+        (format stream "  ~A~%" (description group)))
+    (let ((positionals (positional-arguments group))
+          (optionals (optional-arguments group)))
+      (dolist (arg positionals)
+        (format-positional-argument-help arg parser offset stream))
+      (dolist (arg optionals)
+        (format-optional-argument-help arg parser offset stream)))))
+
+(defgeneric format-positional-arguments (parser offset stream)
+  (:documentation "write the help of the positional arguments into `stream'."))
+
+(defmethod format-positional-arguments ((parser argument-parser) offset stream)
   (let ((positional-arguments (positional-arguments parser))
         (manager (subcommands-manager parser)))
-    (when (or (and manager
-                   (eq (title manager) :positional))
+    (when (or (and manager (eq (title manager) :positional))
               positional-arguments)
-      (format t "positional arguments:~%")
-      ;; subcommand
-      (when (and manager (eq (title manager) :positional))
-        (print-subcommands-arguments-contents manager offset))
-      (dolist (arg positional-arguments)
-        (print-positional-argument-help arg parser offset)
-        (terpri)))))
+      (when (find-if #'(lambda (arg) (not (grouped-in-group parser arg)))
+                     positional-arguments)
+        (format stream "positional arguments:~%")
+        ;; subcommand
+        (when (and manager (eq (title manager) :positional))
+          (format-subcommands-arguments-contents manager offset stream))
+        (dolist (arg positional-arguments)
+          (when (not (grouped-in-group parser arg))
+            (format-positional-argument-help arg parser offset stream)
+            (terpri)))))))
 
-(defgeneric print-optional-arguments (parser offset)
+(defgeneric format-optional-arguments (parser offset stream)
   (:documentation
-   "print the help of the optional arguments."))
+   "write the help of the optional arguments into `stream'."))
 
-(defmethod print-optional-arguments ((parser argument-parser) offset)
+(defmethod format-optional-arguments ((parser argument-parser) offset stream)
   (let ((optional-arguments (optional-arguments parser)))
-    (format t "optional arguments:~%")
-    (dolist (arg optional-arguments)
-      (print-optional-argument-help arg parser offset))))
+    (when (find-if #'(lambda (arg) (not (grouped-in-group parser arg)))
+                   optional-arguments)
+      (format stream "optional arguments:~%")
+      (dolist (arg optional-arguments)
+        (when (not (grouped-in-group parser arg))
+          (format-optional-argument-help arg parser offset stream))))))
 
-(defgeneric print-epilog (parser)
+(defgeneric format-epilog (parser stream)
   (:documentation
-   "print the `epilog' of the parser if it is specified."))
+   "write the `epilog' of the parser if it is specified into `stream'."))
 
-(defmethod print-epilog ((parser argument-parser))
+(defmethod format-epilog ((parser argument-parser) stream)
   (with-slots (epilog prog) parser
     (if epilog
         (progn
-          (write-string (replace-prog epilog prog))
-          (terpri)))))
+          (write-string (replace-prog epilog prog) stream)
+          (terpri stream)))))
+
+(defgeneric format-optional-argument-help-title (parser argument stream)
+  (:documentation "format the title of a optional argument into `stream'."))
+
+(defmethod format-optional-argument-help-title ((parser argument-parser)
+                                                (argument argument)
+                                                stream)
+  (with-slots (flags metavar flags nargs choices) argument
+    (let ((options-string (clap-builtin:join ", " flags)))
+      (write-string options-string stream))
+    (let ((arg-string (argument-format metavar nargs choices)))
+      (when arg-string
+        (write-string " " stream)
+        (write-string arg-string stream)))))
+
+(defgeneric format-positional-argument-help-title (parser argument stream)
+  (:documentation "format the title of a positional argument into `stream'."))
+
+(defmethod format-positional-argument-help-title ((parser argument-parser)
+                                                  (argument argument)
+                                                  stream)
+  (with-slots (flags metavar flags nargs) argument
+    (write-string metavar stream)))   ;just write `metavar'
+
+(defgeneric format-argument-help-title (parser argument stream)
+  (:documentation "format the title of `argument' into `stream'."))
+
+(defmethod format-argument-help-title ((parser argument-parser)
+                                       (argument argument) stream)
+  (if (not (optional-argument-p parser argument))
+      (format-positional-argument-help-title parser argument stream)
+      (format-optional-argument-help-title parser argument stream)))
 
 (defgeneric estimate-help-offset (parser)
-  (:documentation
-   "return the width of offset of help strings"))
+  (:documentation "return the width of offset of help strings"))
 
 (defmethod estimate-help-offset ((parser argument-parser))
-  (let ((max-width
-         (apply #'max
-                (mapcar #'(lambda (x)
-                            (if (optional-argument-p parser x)
-                                (length (clap-builtin:join ", " (flags x)))
-                                (length (metavar x))))
-                        (arguments parser)))))
-    (+ 2 max-width)))
+  (let ((manager (subcommands-manager parser)))
+    (let ((subcommand-title
+           (if manager
+               (with-output-to-string (stream)
+                 (format-subcommands-argument-help-title manager stream))))
+          (argument-titles
+           (mapcar #'(lambda (x)
+                       (with-output-to-string (stream)
+                         (format-argument-help-title parser x stream)))
+                   (arguments parser))))
+      (let ((max-width
+             (apply #'max
+                    (length subcommand-title)
+                    (mapcar #'(lambda (x) (length x)) argument-titles))))
+        (+ 2 max-width 2)))))
+
+(defgeneric format-help (parser)
+  (:documentation
+   "this is an implementation of ArgumentParser.format_help.
+
+return the string of help of the argument-parser."))
+
+(defmethod format-help ((parser argument-parser))
+  (with-output-to-string (stream)
+    (let ((offset (estimate-help-offset parser)))
+      (format-usage parser stream)
+      (format-description parser stream)
+      (format-positional-arguments parser offset stream)
+      (format-optional-arguments parser offset stream)
+      (format-grouped-arguments parser offset stream)
+      (if (and (subcommands-manager parser)
+               (not (eq (title (subcommands-manager parser)) :positional)))
+          (format-subcommands-arguments (subcommands-manager parser) offset
+                                        stream))
+      (format-epilog parser stream)
+      (finish-output stream))))
 
 (defgeneric print-help (parser)
   (:documentation
@@ -1017,17 +1204,8 @@ according to `nargs' and `metavar'."
 it just prints out the help to stdio."))
 
 (defmethod print-help ((parser argument-parser))
-  (let ((offset (estimate-help-offset parser)))
-    (print-usage parser)
-    (print-description parser)
-    (print-positional-arguments parser offset)
-    (print-optional-arguments parser offset)
-    (if (and (subcommands-manager parser)
-             (not (eq (title (subcommands-manager parser)) :positional)))
-        (print-subcommands-arguments (subcommands-manager parser) offset))
-    (print-epilog parser)
-    (finish-output)
-    t))
+  (let ((format (format-help parser)))
+    (write-string format)))
 
 (defgeneric parsed-options (parse-result namespace)
   (:documentation "inner function of parse-args. this function will fill 
@@ -1367,7 +1545,7 @@ a function registered by `set-defaults' will be abailable via func slot of
 namespace."))
 
 (defmethod set-defaults ((parser argument-parser) &key (func nil))
-  (if func (setf (default-func parser) func)))
+  (if func (setf (func parser) func)))
 
 (defgeneric extract-subcommand-args (parser args)
   (:documentation "split args into the arguments for subcommand and
@@ -1415,8 +1593,8 @@ the arguments for the current argument-parser."))
                                        :namespace namespace)
               (verificate-arguments parser parse-result)
               (if args (error 'unrecognized-arguments :args args))
-              (if (and subparser (default-func subparser))
-                  (setf (func namespace) (default-func subparser)))
+              (if (and subparser (func subparser))
+                  (setf (func namespace) (func subparser)))
               (if subparser
                   (concat-namespace (parsed-options parse-result namespace)
                                     (parse-args subparser subcommand-args))

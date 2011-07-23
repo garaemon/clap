@@ -25,10 +25,12 @@ print parser.parse_args("+f X ++bar Y".split())
 
 # parent sample
 parent_parser = ArgumentParser(add_help = False)
-parent_parser.add_argument("--parent", type = int)
+parent_parser.add_argument("--parent", type = int, nargs = "*")
 foo_parser = ArgumentParser(parents = [parent_parser])
 foo_parser.add_argument("foo")
+foo_parser.print_help()
 print foo_parser.parse_args("--parent 2 XXX".split())
+
 bar_parser = ArgumentParser(parents = [parent_parser])
 bar_parser.add_argument("--bar")
 print bar_parser.parse_args("--parent 2 --bar YYY".split())
