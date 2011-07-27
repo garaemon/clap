@@ -1102,7 +1102,7 @@ grouped in `argument-groups' of `parser'"))
             (terpri)))))))
 
 (defgeneric format-optional-arguments (parser offset stream)
-  (:documentation　"write the help of the optional arguments into `stream'."))
+  (:documentation "write the help of the optional arguments into `stream'."))
 
 (defmethod format-optional-arguments ((parser argument-parser) offset stream)
   (let ((optional-arguments (optional-arguments parser)))
